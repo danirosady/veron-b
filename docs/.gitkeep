@@ -1,0 +1,2 @@
+// Package docs contains API documentation for the TMS application.
+package docs

@@ -1,0 +1,2 @@
+// Package migrations contains SQL migration files for the TMS application.
+package migrations

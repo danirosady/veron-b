@@ -1,0 +1,77 @@
+version: "3.9"
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: tms-postgres-dev
+    environment:
+      POSTGRES_DB: tms
+      POSTGRES_USER: tms_user
+      POSTGRES_PASSWORD: secret
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_dev_data:/var/lib/postgresql/data
+      - ./migrations:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U tms_user -d tms"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: tms-redis-dev
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_dev_data:/data
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: tms-backend-dev
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      APP_ENV: development
+      APP_PORT: "8080"
+      APP_HOST: "0.0.0.0"
+      APP_ALLOWED_ORIGINS: "http://localhost:5173,http://localhost:80"
+      DB_HOST: postgres
+      DB_PORT: "5432"
+      DB_NAME: tms
+      DB_USER: tms_user
+      DB_PASSWORD: secret
+      DB_SSLMODE: disable
+      JWT_SECRET: dev-secret-change-in-production
+      JWT_ACCESS_EXPIRY: 24h
+      JWT_REFRESH_EXPIRY: 168h
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./migrations:/app/migrations:ro
+      - .:/app
+    command: go run ./cmd/server
+
+  frontend:
+    image: node:20-alpine
+    container_name: tms-frontend-dev
+    working_dir: /app
+    environment:
+      VITE_API_URL: http://localhost:8080/api/v1
+    volumes:
+      - ./web:/app
+    ports:
+      - "5173:5173"
+    command: sh -c "npm install && npm run dev -- --host"
+
+volumes:
+  postgres_dev_data:
+  redis_dev_data:

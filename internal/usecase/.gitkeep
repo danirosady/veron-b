@@ -1,0 +1,2 @@
+// Package usecase contains business logic use cases for the TMS application.
+package usecase

@@ -1,0 +1,2 @@
+// Package response contains shared response utilities for the TMS application.
+package response

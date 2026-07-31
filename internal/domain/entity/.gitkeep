@@ -1,0 +1,2 @@
+// Package entity contains domain entities for the TMS application.
+package entity

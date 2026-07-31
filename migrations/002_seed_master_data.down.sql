@@ -1,0 +1,12 @@
+DELETE FROM replacement_details WHERE true;
+DELETE FROM replacements WHERE true;
+DELETE FROM tyre_master WHERE true;
+DELETE FROM unit_type_configs WHERE true;
+DELETE FROM master_remarks WHERE true;
+DELETE FROM master_actions WHERE true;
+DELETE FROM master_reasons WHERE true;
+DELETE FROM master_patterns WHERE true;
+DELETE FROM master_types WHERE true;
+DELETE FROM master_sizes WHERE true;
+DELETE FROM master_brands WHERE true;
+DELETE FROM users WHERE email = 'admin@tms.com';

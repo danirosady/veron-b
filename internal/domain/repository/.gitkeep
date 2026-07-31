@@ -1,0 +1,2 @@
+// Package repository defines repository interfaces for the TMS application.
+package repository
