@@ -36,15 +36,15 @@ USER appuser
 EXPOSE 8080
 
 # Default env (can be overridden via docker-compose or env vars)
-ENV APP_ENV=production
-ENV APP_PORT=8080
-ENV APP_HOST=0.0.0.0
-ENV DB_HOST=postgres
-ENV DB_PORT=5432
-ENV DB_NAME=tms
-ENV DB_USER=tms_user
-ENV DB_PASSWORD=secret
-ENV DB_SSLMODE=disable
-ENV JWT_SECRET=change-this-in-production
+# ENV APP_ENV=production
+# ENV APP_PORT=8080
+# ENV APP_HOST=0.0.0.0
+# ENV DB_HOST=postgres
+# ENV DB_PORT=5432
+# ENV DB_NAME=tms
+# ENV DB_USER=tms_user
+# ENV DB_PASSWORD=secret
+# ENV DB_SSLMODE=disable
+# ENV JWT_SECRET=change-this-in-production
 
 ENTRYPOINT ["./server"]

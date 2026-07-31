@@ -18,8 +18,8 @@ CREATE TABLE IF NOT EXISTS companies (
     CONSTRAINT chk_companies_status CHECK (status IN ('active', 'inactive'))
 );
 
-CREATE INDEX idx_companies_name ON companies(name);
-CREATE INDEX idx_companies_status ON companies(status);
+CREATE INDEX IF NOT EXISTS idx_companies_name ON companies(name);
+CREATE INDEX IF NOT EXISTS idx_companies_status ON companies(status);
 
 -- ============================================================
 -- USERS (references companies)
@@ -45,10 +45,10 @@ CREATE TABLE IF NOT EXISTS users (
     CONSTRAINT chk_users_status CHECK (status IN ('active', 'inactive'))
 );
 
-CREATE INDEX idx_users_email ON users(email);
-CREATE INDEX idx_users_company_id ON users(company_id);
-CREATE INDEX idx_users_role ON users(role);
-CREATE INDEX idx_users_status ON users(status);
+CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
+CREATE INDEX IF NOT EXISTS idx_users_company_id ON users(company_id);
+CREATE INDEX IF NOT EXISTS idx_users_role ON users(role);
+CREATE INDEX IF NOT EXISTS idx_users_status ON users(status);
 
 -- ============================================================
 -- PROJECTS (references companies)
@@ -70,8 +70,8 @@ CREATE TABLE IF NOT EXISTS projects (
     CONSTRAINT chk_projects_status CHECK (status IN ('active', 'inactive'))
 );
 
-CREATE INDEX idx_projects_company_id ON projects(company_id);
-CREATE INDEX idx_projects_status ON projects(status);
+CREATE INDEX IF NOT EXISTS idx_projects_company_id ON projects(company_id);
+CREATE INDEX IF NOT EXISTS idx_projects_status ON projects(status);
 
 -- ============================================================
 -- DRIVERS (references companies)
@@ -93,9 +93,9 @@ CREATE TABLE IF NOT EXISTS drivers (
     CONSTRAINT chk_drivers_status CHECK (status IN ('active', 'inactive'))
 );
 
-CREATE INDEX idx_drivers_company_id ON drivers(company_id);
-CREATE INDEX idx_drivers_employee_id ON drivers(employee_id);
-CREATE INDEX idx_drivers_status ON drivers(status);
+CREATE INDEX IF NOT EXISTS idx_drivers_company_id ON drivers(company_id);
+CREATE INDEX IF NOT EXISTS idx_drivers_employee_id ON drivers(employee_id);
+CREATE INDEX IF NOT EXISTS idx_drivers_status ON drivers(status);
 
 -- ============================================================
 -- MASTER BRANDS (no dependencies)
@@ -162,7 +162,7 @@ CREATE TABLE IF NOT EXISTS master_patterns (
     CONSTRAINT chk_master_patterns_status CHECK (status IN ('active', 'inactive'))
 );
 
-CREATE INDEX idx_master_patterns_brand_id ON master_patterns(brand_id);
+CREATE INDEX IF NOT EXISTS idx_master_patterns_brand_id ON master_patterns(brand_id);
 
 -- ============================================================
 -- MASTER REASONS (no dependencies)
@@ -257,11 +257,11 @@ CREATE TABLE IF NOT EXISTS units (
     CONSTRAINT chk_units_status CHECK (status IN ('active', 'inactive'))
 );
 
-CREATE INDEX idx_units_company_id ON units(company_id);
-CREATE INDEX idx_units_project_id ON units(project_id);
-CREATE INDEX idx_units_unit_id ON units(unit_id);
-CREATE INDEX idx_units_unit_type ON units(unit_type);
-CREATE INDEX idx_units_status ON units(status);
+CREATE INDEX IF NOT EXISTS idx_units_company_id ON units(company_id);
+CREATE INDEX IF NOT EXISTS idx_units_project_id ON units(project_id);
+CREATE INDEX IF NOT EXISTS idx_units_unit_id ON units(unit_id);
+CREATE INDEX IF NOT EXISTS idx_units_unit_type ON units(unit_type);
+CREATE INDEX IF NOT EXISTS idx_units_status ON units(status);
 
 -- ============================================================
 -- TYRE MASTER (references companies, units, master tables)
@@ -321,14 +321,14 @@ CREATE TABLE IF NOT EXISTS tyre_master (
     CONSTRAINT chk_tyre_master_psi CHECK (psi IS NULL OR psi > 0)
 );
 
-CREATE INDEX idx_tyre_master_company_id ON tyre_master(company_id);
-CREATE INDEX idx_tyre_master_unit_id ON tyre_master(unit_id);
-CREATE INDEX idx_tyre_master_barcode ON tyre_master(barcode);
-CREATE INDEX idx_tyre_master_serial_number ON tyre_master(serial_number);
-CREATE INDEX idx_tyre_master_status ON tyre_master(status);
-CREATE INDEX idx_tyre_master_brand_id ON tyre_master(brand_id);
-CREATE INDEX idx_tyre_master_size_id ON tyre_master(size_id);
-CREATE INDEX idx_tyre_master_pattern_id ON tyre_master(pattern_id);
+CREATE INDEX IF NOT EXISTS idx_tyre_master_company_id ON tyre_master(company_id);
+CREATE INDEX IF NOT EXISTS idx_tyre_master_unit_id ON tyre_master(unit_id);
+CREATE INDEX IF NOT EXISTS idx_tyre_master_barcode ON tyre_master(barcode);
+CREATE INDEX IF NOT EXISTS idx_tyre_master_serial_number ON tyre_master(serial_number);
+CREATE INDEX IF NOT EXISTS idx_tyre_master_status ON tyre_master(status);
+CREATE INDEX IF NOT EXISTS idx_tyre_master_brand_id ON tyre_master(brand_id);
+CREATE INDEX IF NOT EXISTS idx_tyre_master_size_id ON tyre_master(size_id);
+CREATE INDEX IF NOT EXISTS idx_tyre_master_pattern_id ON tyre_master(pattern_id);
 
 -- ============================================================
 -- REPLACEMENTS (references companies, projects, units, drivers, users)
@@ -365,12 +365,12 @@ CREATE TABLE IF NOT EXISTS replacements (
     CONSTRAINT chk_replacements_hm_plan CHECK (hm_plan > current_life_hm)
 );
 
-CREATE INDEX idx_replacements_company_id ON replacements(company_id);
-CREATE INDEX idx_replacements_project_id ON replacements(project_id);
-CREATE INDEX idx_replacements_unit_id ON replacements(unit_id);
-CREATE INDEX idx_replacements_driver_id ON replacements(driver_id);
-CREATE INDEX idx_replacements_date ON replacements(date);
-CREATE INDEX idx_replacements_created_at ON replacements(created_at);
+CREATE INDEX IF NOT EXISTS idx_replacements_company_id ON replacements(company_id);
+CREATE INDEX IF NOT EXISTS idx_replacements_project_id ON replacements(project_id);
+CREATE INDEX IF NOT EXISTS idx_replacements_unit_id ON replacements(unit_id);
+CREATE INDEX IF NOT EXISTS idx_replacements_driver_id ON replacements(driver_id);
+CREATE INDEX IF NOT EXISTS idx_replacements_date ON replacements(date);
+CREATE INDEX IF NOT EXISTS idx_replacements_created_at ON replacements(created_at);
 
 -- ============================================================
 -- REPLACEMENT DETAILS (references replacements, tyre_master, master_reasons)
@@ -423,7 +423,7 @@ CREATE TABLE IF NOT EXISTS replacement_details (
     CONSTRAINT chk_rd_action CHECK (action IN ('mount', 'dismount', 'swap'))
 );
 
-CREATE INDEX idx_rd_replacement_id ON replacement_details(replacement_id);
-CREATE INDEX idx_rd_old_tyre_id ON replacement_details(old_tyre_id);
-CREATE INDEX idx_rd_new_tyre_id ON replacement_details(new_tyre_id);
-CREATE INDEX idx_rd_failure_reason_id ON replacement_details(failure_reason_id);
+CREATE INDEX IF NOT EXISTS idx_rd_replacement_id ON replacement_details(replacement_id);
+CREATE INDEX IF NOT EXISTS idx_rd_old_tyre_id ON replacement_details(old_tyre_id);
+CREATE INDEX IF NOT EXISTS idx_rd_new_tyre_id ON replacement_details(new_tyre_id);
+CREATE INDEX IF NOT EXISTS idx_rd_failure_reason_id ON replacement_details(failure_reason_id);
