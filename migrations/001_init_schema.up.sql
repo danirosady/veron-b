@@ -4,7 +4,7 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 -- ============================================================
 -- COMPANIES (created first — referenced by users, projects, drivers, units, tyres)
 -- ============================================================
-CREATE TABLE companies (
+CREATE TABLE IF NOT EXISTS companies (
     id              BIGSERIAL PRIMARY KEY,
     name            VARCHAR(255) NOT NULL,
     address         TEXT NULL,
@@ -24,7 +24,7 @@ CREATE INDEX idx_companies_status ON companies(status);
 -- ============================================================
 -- USERS (references companies)
 -- ============================================================
-CREATE TABLE users (
+CREATE TABLE IF NOT EXISTS users (
     id              BIGSERIAL PRIMARY KEY,
     name            VARCHAR(255) NOT NULL,
     email           VARCHAR(255) NOT NULL UNIQUE,
@@ -53,7 +53,7 @@ CREATE INDEX idx_users_status ON users(status);
 -- ============================================================
 -- PROJECTS (references companies)
 -- ============================================================
-CREATE TABLE projects (
+CREATE TABLE IF NOT EXISTS projects (
     id              BIGSERIAL PRIMARY KEY,
     company_id      BIGINT NOT NULL,
     name            VARCHAR(255) NOT NULL,
@@ -76,7 +76,7 @@ CREATE INDEX idx_projects_status ON projects(status);
 -- ============================================================
 -- DRIVERS (references companies)
 -- ============================================================
-CREATE TABLE drivers (
+CREATE TABLE IF NOT EXISTS drivers (
     id              BIGSERIAL PRIMARY KEY,
     company_id      BIGINT NOT NULL,
     name            VARCHAR(255) NOT NULL,
@@ -100,7 +100,7 @@ CREATE INDEX idx_drivers_status ON drivers(status);
 -- ============================================================
 -- MASTER BRANDS (no dependencies)
 -- ============================================================
-CREATE TABLE master_brands (
+CREATE TABLE IF NOT EXISTS master_brands (
     id          BIGSERIAL PRIMARY KEY,
     name        VARCHAR(100) NOT NULL UNIQUE,
     code        VARCHAR(50) NULL,
@@ -115,7 +115,7 @@ CREATE TABLE master_brands (
 -- ============================================================
 -- MASTER SIZES (no dependencies)
 -- ============================================================
-CREATE TABLE master_sizes (
+CREATE TABLE IF NOT EXISTS master_sizes (
     id          BIGSERIAL PRIMARY KEY,
     name        VARCHAR(50) NOT NULL UNIQUE,
     code        VARCHAR(50) NULL,
@@ -130,7 +130,7 @@ CREATE TABLE master_sizes (
 -- ============================================================
 -- MASTER TYPES (no dependencies)
 -- ============================================================
-CREATE TABLE master_types (
+CREATE TABLE IF NOT EXISTS master_types (
     id          BIGSERIAL PRIMARY KEY,
     name        VARCHAR(50) NOT NULL UNIQUE,
     code        VARCHAR(50) NULL,
@@ -145,7 +145,7 @@ CREATE TABLE master_types (
 -- ============================================================
 -- MASTER PATTERNS (references master_brands)
 -- ============================================================
-CREATE TABLE master_patterns (
+CREATE TABLE IF NOT EXISTS master_patterns (
     id          BIGSERIAL PRIMARY KEY,
     brand_id    BIGINT NOT NULL,
     name        VARCHAR(100) NOT NULL,
@@ -167,7 +167,7 @@ CREATE INDEX idx_master_patterns_brand_id ON master_patterns(brand_id);
 -- ============================================================
 -- MASTER REASONS (no dependencies)
 -- ============================================================
-CREATE TABLE master_reasons (
+CREATE TABLE IF NOT EXISTS master_reasons (
     id          BIGSERIAL PRIMARY KEY,
     name        VARCHAR(255) NOT NULL UNIQUE,
     code        VARCHAR(50) NULL,
@@ -182,7 +182,7 @@ CREATE TABLE master_reasons (
 -- ============================================================
 -- MASTER ACTIONS (no dependencies)
 -- ============================================================
-CREATE TABLE master_actions (
+CREATE TABLE IF NOT EXISTS master_actions (
     id          BIGSERIAL PRIMARY KEY,
     name        VARCHAR(100) NOT NULL UNIQUE,
     code        VARCHAR(50) NULL,
@@ -197,7 +197,7 @@ CREATE TABLE master_actions (
 -- ============================================================
 -- MASTER REMARKS (no dependencies)
 -- ============================================================
-CREATE TABLE master_remarks (
+CREATE TABLE IF NOT EXISTS master_remarks (
     id          BIGSERIAL PRIMARY KEY,
     name        VARCHAR(100) NOT NULL UNIQUE,
     code        VARCHAR(50) NULL,
@@ -212,7 +212,7 @@ CREATE TABLE master_remarks (
 -- ============================================================
 -- UNIT TYPE CONFIGS (no dependencies)
 -- ============================================================
-CREATE TABLE unit_type_configs (
+CREATE TABLE IF NOT EXISTS unit_type_configs (
     id              BIGSERIAL PRIMARY KEY,
     unit_type       VARCHAR(50) NOT NULL UNIQUE,
     display_name    VARCHAR(100) NOT NULL,
@@ -227,7 +227,7 @@ CREATE TABLE unit_type_configs (
 -- ============================================================
 -- UNITS (references companies, projects)
 -- ============================================================
-CREATE TABLE units (
+CREATE TABLE IF NOT EXISTS units (
     id                  BIGSERIAL PRIMARY KEY,
     company_id          BIGINT NOT NULL,
     project_id         BIGINT NOT NULL,
@@ -266,7 +266,7 @@ CREATE INDEX idx_units_status ON units(status);
 -- ============================================================
 -- TYRE MASTER (references companies, units, master tables)
 -- ============================================================
-CREATE TABLE tyre_master (
+CREATE TABLE IF NOT EXISTS tyre_master (
     id                  BIGSERIAL PRIMARY KEY,
     company_id          BIGINT NOT NULL,
     unit_id             BIGINT NULL,
@@ -333,7 +333,7 @@ CREATE INDEX idx_tyre_master_pattern_id ON tyre_master(pattern_id);
 -- ============================================================
 -- REPLACEMENTS (references companies, projects, units, drivers, users)
 -- ============================================================
-CREATE TABLE replacements (
+CREATE TABLE IF NOT EXISTS replacements (
     id                  BIGSERIAL PRIMARY KEY,
     company_id          BIGINT NOT NULL,
     project_id          BIGINT NOT NULL,
@@ -375,7 +375,7 @@ CREATE INDEX idx_replacements_created_at ON replacements(created_at);
 -- ============================================================
 -- REPLACEMENT DETAILS (references replacements, tyre_master, master_reasons)
 -- ============================================================
-CREATE TABLE replacement_details (
+CREATE TABLE IF NOT EXISTS replacement_details (
     id                          BIGSERIAL PRIMARY KEY,
     replacement_id              BIGINT NOT NULL,
 

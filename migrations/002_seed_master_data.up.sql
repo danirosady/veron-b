@@ -9,7 +9,8 @@ INSERT INTO master_brands (name) VALUES
 ('VK TYRE'),
 ('TRIANGLE'),
 ('Giti'),
-('SAKURA');
+('SAKURA')
+ON CONFLICT (name) DO NOTHING;
 
 -- Seed master_sizes
 INSERT INTO master_sizes (name) VALUES
@@ -18,12 +19,14 @@ INSERT INTO master_sizes (name) VALUES
 ('20.5R25'),
 ('14.00-25'),
 ('14.00X24'),
-('20.5X25');
+('20.5X25')
+ON CONFLICT (name) DO NOTHING;
 
 -- Seed master_types
 INSERT INTO master_types (name) VALUES
 ('Radial'),
-('Bias');
+('Bias')
+ON CONFLICT (name) DO NOTHING;
 
 -- Seed master_reasons
 INSERT INTO master_reasons (name) VALUES
@@ -42,7 +45,8 @@ INSERT INTO master_reasons (name) VALUES
 ('Sidewall Damage'),
 ('Overheating'),
 ('Nail/Puncture'),
-('Uneven Wear');
+('Uneven Wear')
+ON CONFLICT (name) DO NOTHING;
 
 -- Seed master_actions
 INSERT INTO master_actions (name) VALUES
@@ -59,7 +63,8 @@ INSERT INTO master_actions (name) VALUES
 ('Swap to Pos 9'),
 ('Swap to Pos 10'),
 ('Repair'),
-('Scrap');
+('Scrap')
+ON CONFLICT (name) DO NOTHING;
 
 -- Seed master_remarks
 INSERT INTO master_remarks (name) VALUES
@@ -70,7 +75,8 @@ INSERT INTO master_remarks (name) VALUES
 ('Scrap'),
 ('UNIT SECOND HAND'),
 ('Ex Repair'),
-('Canibal Tyre');
+('Canibal Tyre')
+ON CONFLICT (name) DO NOTHING;
 
 -- Seed unit_type_configs (SANY 10 positions)
 INSERT INTO unit_type_configs (unit_type, display_name, max_position, position_config) VALUES (
@@ -87,7 +93,8 @@ INSERT INTO unit_type_configs (unit_type, display_name, max_position, position_c
       {"position": 8, "label": "R-R4", "side": "rear_right", "axle": "bogie", "x": 0.83, "y": 0.55},
       {"position": 9, "label": "F-L1", "side": "front_left", "axle": "front", "x": 0.35, "y": 0.75},
       {"position": 10, "label": "F-R1", "side": "front_right", "axle": "front", "x": 0.65, "y": 0.75}]'::jsonb
-);
+)
+ON CONFLICT (unit_type) DO NOTHING;
 
 -- Seed unit_type_configs (GREADER 6 positions)
 INSERT INTO unit_type_configs (unit_type, display_name, max_position, position_config) VALUES (
@@ -100,7 +107,8 @@ INSERT INTO unit_type_configs (unit_type, display_name, max_position, position_c
       {"position": 4, "label": "F-R", "side": "front_right", "axle": "front", "x": 0.70, "y": 0.70},
       {"position": 5, "label": "R-L2", "side": "rear_left", "axle": "rear_2", "x": 0.20, "y": 0.55},
       {"position": 6, "label": "R-R2", "side": "rear_right", "axle": "rear_2", "x": 0.80, "y": 0.55}]'::jsonb
-);
+)
+ON CONFLICT (unit_type) DO NOTHING;
 
 -- Seed unit_type_configs (ADT 8 positions)
 INSERT INTO unit_type_configs (unit_type, display_name, max_position, position_config) VALUES (
@@ -115,7 +123,8 @@ INSERT INTO unit_type_configs (unit_type, display_name, max_position, position_c
       {"position": 6, "label": "R-R3", "side": "rear_right", "axle": "bogie", "x": 0.80, "y": 0.55},
       {"position": 7, "label": "F-L", "side": "front_left", "axle": "front", "x": 0.35, "y": 0.75},
       {"position": 8, "label": "F-R", "side": "front_right", "axle": "front", "x": 0.65, "y": 0.75}]'::jsonb
-);
+)
+ON CONFLICT (unit_type) DO NOTHING;
 
 -- Seed master_patterns (after brands are inserted)
 INSERT INTO master_patterns (brand_id, name)
@@ -134,9 +143,11 @@ CROSS JOIN (VALUES
     ('VK TYRE', 'XTRA LOAD GRIP'),
     ('TRIANGLE', 'TB 516S'),
     ('Giti', 'GAO802')
-) AS p(brand_name, name) WHERE b.name = p.brand_name;
+) AS p(brand_name, name) WHERE b.name = p.brand_name
+ON CONFLICT ON CONSTRAINT uq_master_patterns_brand_name DO NOTHING;
 
 -- Seed superadmin user (password: password123)
 -- bcrypt hash for 'password123': $2a$10$Em30c27ErDXVIWBY0jopT.IsQTRYS4Kpd.Y792p.i1dVPOIgxootm
 INSERT INTO users (name, email, password, role, company_id, status) VALUES
-('Super Admin', 'admin@tms.com', '$2a$10$Em30c27ErDXVIWBY0jopT.IsQTRYS4Kpd.Y792p.i1dVPOIgxootm', 'superadmin', NULL, 'active');
+('Super Admin', 'admin@tms.com', '$2a$10$Em30c27ErDXVIWBY0jopT.IsQTRYS4Kpd.Y792p.i1dVPOIgxootm', 'superadmin', NULL, 'active')
+ON CONFLICT (email) DO NOTHING;
