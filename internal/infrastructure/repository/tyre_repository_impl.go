@@ -2,6 +2,7 @@ package repository
 
 import (
 	"errors"
+	"strconv"
 
 	"github.com/tms/tyre/internal/domain/entity"
 	"github.com/tms/tyre/internal/domain/repository"
@@ -24,11 +25,10 @@ func (r *tyreRepository) GetByID(id uint) (*entity.TyreMaster, error) {
 	var tyre entity.TyreMaster
 	err := r.db.
 		Preload("Company").
-		Preload("Unit").
 		Preload("Size").
 		Preload("Brand").
 		Preload("Pattern").
-		First(&tyre, id).Error
+		Where("id = ?", int64(id)).First(&tyre).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, nil
@@ -86,31 +86,39 @@ func (r *tyreRepository) List(page, perPage int, companyID uint, status, brandID
 	var tyres []*entity.TyreMaster
 	var total int64
 
-	query := r.db.Model(&entity.TyreMaster{}).Where("company_id = ?", companyID)
+	db := r.db.Model(&entity.TyreMaster{})
+	if companyID > 0 {
+		db = db.Where("company_id = ?", companyID)
+	}
 	if status != "" {
-		query = query.Where("status = ?", status)
+		db = db.Where("status = ?", status)
 	}
 	if brandID != "" {
-		query = query.Where("brand_id = ?", brandID)
+		if n, err := strconv.ParseUint(brandID, 10, 64); err == nil {
+			db = db.Where("brand_id = ?", n)
+		}
 	}
 	if sizeID != "" {
-		query = query.Where("size_id = ?", sizeID)
+		if n, err := strconv.ParseUint(sizeID, 10, 64); err == nil {
+			db = db.Where("size_id = ?", n)
+		}
 	}
 
-	if err := query.Count(&total).Error; err != nil {
+	if err := db.Count(&total).Error; err != nil {
 		return nil, 0, err
 	}
 
 	offset := (page - 1) * perPage
-	if err := query.
+	err := db.
+		Select("tyre_master.*").
 		Preload("Company").
-		Preload("Unit").
 		Preload("Size").
 		Preload("Brand").
 		Preload("Pattern").
 		Offset(offset).Limit(perPage).
 		Order("id DESC").
-		Find(&tyres).Error; err != nil {
+		Find(&tyres).Error
+	if err != nil {
 		return nil, 0, err
 	}
 
@@ -121,6 +129,7 @@ func (r *tyreRepository) GetByUnitID(unitID uint) ([]*entity.TyreMaster, error) 
 	var tyres []*entity.TyreMaster
 	err := r.db.
 		Where("unit_id = ? AND status = 'mounted'", unitID).
+		Preload("Company").
 		Preload("Size").
 		Preload("Brand").
 		Preload("Pattern").
@@ -133,6 +142,7 @@ func (r *tyreRepository) GetSpareTyres(companyID uint) ([]*entity.TyreMaster, er
 	var tyres []*entity.TyreMaster
 	err := r.db.
 		Where("company_id = ? AND status IN ('spare', 'dismounted')", companyID).
+		Preload("Company").
 		Preload("Size").
 		Preload("Brand").
 		Preload("Pattern").
@@ -141,7 +151,7 @@ func (r *tyreRepository) GetSpareTyres(companyID uint) ([]*entity.TyreMaster, er
 	return tyres, err
 }
 
-func (r *tyreRepository) Mount(tyreID uint, unitID uint, position int) error {
+func (r *tyreRepository) Mount(tyreID uint, unitID uint, position string) error {
 	return r.db.Model(&entity.TyreMaster{}).
 		Where("id = ?", tyreID).
 		Updates(map[string]interface{}{

@@ -9,7 +9,7 @@ type CreateTyreRequest struct {
 	BrandID      uint     `json:"brand_id" binding:"required"`
 	PatternID    uint     `json:"pattern_id" binding:"required"`
 	OTD          float64  `json:"otd" binding:"required,gte=0"`
-	RTD          float64  `json:"rtd" binding:"required,gte=0"`
+	RTD          float64  `json:"rtd" binding:"omitempty,gte=0"`
 	RTD1         *float64 `json:"rtd_1" binding:"omitempty,gte=0"`
 	RTD2         *float64 `json:"rtd_2" binding:"omitempty,gte=0"`
 	Lifetime     float64  `json:"lifetime" binding:"gte=0"`

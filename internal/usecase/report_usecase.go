@@ -2,7 +2,6 @@ package usecase
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"github.com/tms/tyre/internal/domain/repository"
@@ -219,7 +218,7 @@ func (uc *ReportUseCase) GetScheduleReport(ctx context.Context, filters map[stri
 		PatternName   string
 		OTD           float64
 		RTD           float64
-		MountedPos    *int
+		MountedPos    *string
 	}
 
 	var mountedTyres []TyreMountInfo
@@ -297,7 +296,7 @@ func (uc *ReportUseCase) GetScheduleReport(ctx context.Context, filters map[stri
 
 		position := ""
 		if tyre.MountedPos != nil {
-			position = fmt.Sprintf("%d", *tyre.MountedPos)
+			position = *tyre.MountedPos
 		}
 
 		row := &ScheduleReportRow{

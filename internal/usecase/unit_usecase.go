@@ -3,11 +3,13 @@ package usecase
 import (
 	"context"
 	"errors"
+	"fmt"
 	"strings"
 
 	"github.com/tms/tyre/internal/domain/entity"
 	"github.com/tms/tyre/internal/domain/repository"
 	"github.com/tms/tyre/internal/dto/request"
+	"github.com/tms/tyre/internal/dto/response"
 )
 
 // Common errors used by the unit use case
@@ -31,6 +33,7 @@ type UnitUseCase struct {
 	projectRepo repository.ProjectRepository
 	companyRepo repository.CompanyRepository
 	tyreRepo    repository.TyreRepository
+	masterRepo  repository.MasterRepository
 }
 
 // NewUnitUseCase creates a new UnitUseCase instance.
@@ -39,12 +42,14 @@ func NewUnitUseCase(
 	projectRepo repository.ProjectRepository,
 	companyRepo repository.CompanyRepository,
 	tyreRepo repository.TyreRepository,
+	masterRepo repository.MasterRepository,
 ) *UnitUseCase {
 	return &UnitUseCase{
 		unitRepo:    unitRepo,
 		projectRepo: projectRepo,
 		companyRepo: companyRepo,
 		tyreRepo:    tyreRepo,
+		masterRepo:  masterRepo,
 	}
 }
 
@@ -237,8 +242,8 @@ func (uc *UnitUseCase) UpdateHM(ctx context.Context, id uint, req *request.Updat
 	return unit, nil
 }
 
-// GetTyres returns all tyres mounted on the unit.
-func (uc *UnitUseCase) GetTyres(ctx context.Context, id uint) ([]*entity.TyreMaster, error) {
+// GetTyres returns unit tyres with structured position layout.
+func (uc *UnitUseCase) GetTyres(ctx context.Context, id uint) (*response.UnitTyresResponse, error) {
 	unit, err := uc.unitRepo.GetByID(id)
 	if err != nil {
 		return nil, err
@@ -246,5 +251,91 @@ func (uc *UnitUseCase) GetTyres(ctx context.Context, id uint) ([]*entity.TyreMas
 	if unit == nil {
 		return nil, ErrUnitNotFound
 	}
-	return uc.tyreRepo.GetByUnitID(id)
+
+	// Get unit type config for position layout
+	var unitTypeConfig *entity.UnitTypeConfig
+	unitTypeConfig, err = uc.masterRepo.GetUnitTypeConfig(unit.UnitType)
+	if err != nil {
+		// Config not found is ok — fall back to default layout
+		unitTypeConfig = nil
+	}
+
+	// Get mounted tyres for this unit
+	mountedTyres, err := uc.tyreRepo.GetByUnitID(id)
+	if err != nil {
+		return nil, err
+	}
+
+	// Get spare tyres for this company
+	spareTyres, err := uc.tyreRepo.GetSpareTyres(unit.CompanyID)
+	if err != nil {
+		return nil, err
+	}
+
+	// Build position map from mounted tyres
+	tyreByPosition := make(map[string]*entity.TyreMaster)
+	for _, t := range mountedTyres {
+		if t.MountedPosition != nil {
+			tyreByPosition[*t.MountedPosition] = t
+		}
+	}
+
+	// Build positions array from config
+	var positions []*response.UnitTyrePosition
+	maxPos := unit.MaxPosition
+	if unitTypeConfig != nil {
+		maxPos = unitTypeConfig.MaxPosition
+		positions = make([]*response.UnitTyrePosition, 0, len(unitTypeConfig.PositionConfig))
+		for _, pos := range unitTypeConfig.PositionConfig {
+			tyre := tyreByPosition[pos.Position]
+			var rtd1, rtd2 *float64
+			if tyre != nil {
+				rtd1, rtd2 = tyre.RTD1, tyre.RTD2
+			}
+			positions = append(positions, response.ToUnitTyrePosition(pos, tyre, rtd1, rtd2))
+		}
+	} else {
+		// Fallback: generate default positions when no config exists
+		positions = make([]*response.UnitTyrePosition, 0, maxPos)
+		for i := 1; i <= maxPos; i++ {
+			label := fmt.Sprintf("Pos %d", i)
+			tyre := tyreByPosition[label]
+			status := "empty"
+			if tyre != nil {
+				status = tyre.Status
+			}
+			positions = append(positions, &response.UnitTyrePosition{
+				Position: label,
+				Label:    label,
+				Side:     "",
+				Axle:     "",
+				X:        0,
+				Y:        0,
+				Tyre:     response.ToTyreResponse(tyre),
+				RTD:      nil,
+				Status:   status,
+			})
+		}
+	}
+
+	// Convert spare tyres to response
+	spareTyreResponses := make([]*response.TyreResponse, 0, len(spareTyres))
+	for _, t := range spareTyres {
+		spareTyreResponses = append(spareTyreResponses, response.ToTyreResponse(t))
+	}
+
+	// Build unit type config response
+	var utcResp *response.UnitTypeConfigResponse
+	if unitTypeConfig != nil {
+		utcResp = response.ToUnitTypeConfigResponse(unitTypeConfig)
+	}
+
+	return &response.UnitTyresResponse{
+		Unit:           response.ToUnitResponse(unit),
+		UnitTypeConfig: utcResp,
+		Positions:      positions,
+		SpareTyres:     spareTyreResponses,
+		TotalMounted:   len(mountedTyres),
+		TotalSpare:     len(spareTyres),
+	}, nil
 }

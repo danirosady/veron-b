@@ -20,7 +20,7 @@ func RegisterRoutes(r *gin.Engine, db *gorm.DB, cfg *configs.Config) {
 	authUseCase := usecase.NewAuthUseCase(repos.User, jwtService)
 	companyUseCase := usecase.NewCompanyUseCase(repos.Company, repos.Project, repos.Unit, repos.Driver)
 	projectUseCase := usecase.NewProjectUseCase(repos.Project, repos.Company, repos.Unit)
-	unitUseCase := usecase.NewUnitUseCase(repos.Unit, repos.Project, repos.Company, repos.Tyre)
+	unitUseCase := usecase.NewUnitUseCase(repos.Unit, repos.Project, repos.Company, repos.Tyre, repos.Master)
 	driverUseCase := usecase.NewDriverUseCase(repos.Driver, repos.Company)
 	tyreUseCase := usecase.NewTyreUseCase(repos.Tyre, repos.Company, repos.Master)
 	masterUseCase := usecase.NewMasterUseCase(repos.Master)

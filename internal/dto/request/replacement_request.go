@@ -1,18 +1,18 @@
 package request
 
 type CreateReplacementRequest struct {
-	UnitID        uint                         `json:"unit_id" binding:"required"`
-	DriverID      uint                         `json:"driver_id" binding:"required"`
+	UnitID        *uint                       `json:"unit_id" binding:"required"`
+	DriverID      *uint                       `json:"driver_id" binding:"required"`
 	Date          string                       `json:"date" binding:"required"`
-	HMUpdate      float64                      `json:"hm_update" binding:"gte=0"`
-	CurrentLifeHM float64                      `json:"current_life_hm" binding:"required,gte=0"`
-	HMPlan        float64                      `json:"hm_plan" binding:"required,gtfield=CurrentLifeHM"`
+	HMUpdate      *float64                    `json:"hm_update"`
+	CurrentLifeHM *float64                    `json:"current_life_hm" binding:"required,gte=0"`
+	HMPlan        *float64                    `json:"hm_plan" binding:"required,gtfield=CurrentLifeHM"`
 	Remarks       string                       `json:"remarks"`
 	Details       []ReplacementDetailRequest   `json:"details" binding:"required,min=1,dive"`
 }
 
 type ReplacementDetailRequest struct {
-	Position      int      `json:"position" binding:"required,min=1,max=20"`
+	Position      string   `json:"position" binding:"required,max=20"`
 	Action        string   `json:"action" binding:"required,oneof=mount dismount swap"`
 	OldTyreID     *uint    `json:"old_tyre_id"`
 	NewTyreID     *uint    `json:"new_tyre_id"`

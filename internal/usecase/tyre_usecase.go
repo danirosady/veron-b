@@ -148,7 +148,7 @@ func (uc *TyreUseCase) Create(ctx context.Context, companyID uint, req *request.
 		return nil, ErrTyreRTDExceedsOTD
 	}
 
-	if req.RTD < 0 || req.RTD > req.OTD {
+	if req.RTD > req.OTD {
 		return nil, ErrTyreRTDExceedsOTD
 	}
 
@@ -170,6 +170,9 @@ func (uc *TyreUseCase) Create(ctx context.Context, companyID uint, req *request.
 	}
 
 	rtd := req.RTD
+	if rtd == 0 {
+		rtd = req.OTD
+	}
 	if req.RTD1 != nil && req.RTD2 != nil {
 		rtd = (*req.RTD1 + *req.RTD2) / 2.0
 	}
@@ -196,8 +199,8 @@ func (uc *TyreUseCase) Create(ctx context.Context, companyID uint, req *request.
 	}
 
 	tyre := &entity.TyreMaster{
-		CompanyID:       companyID,
-		Barcode:         barcode,
+		CompanyID:  companyID,
+		Barcode:    barcode,
 		SerialNumber:    serial,
 		DOTCode:         req.DOTCode,
 		Type:            tyreType,

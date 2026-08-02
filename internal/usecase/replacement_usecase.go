@@ -56,7 +56,7 @@ func (uc *ReplacementUseCase) Create(ctx context.Context, req *request.CreateRep
 	}
 
 	// Validate unit exists
-	unit, err := uc.unitRepo.GetByID(req.UnitID)
+	unit, err := uc.unitRepo.GetByID(*req.UnitID)
 	if err != nil {
 		return nil, err
 	}
@@ -65,8 +65,8 @@ func (uc *ReplacementUseCase) Create(ctx context.Context, req *request.CreateRep
 	}
 
 	// Validate driver exists if provided
-	if req.DriverID != 0 {
-		driver, err := uc.driverRepo.GetByID(req.DriverID)
+	if req.DriverID != nil && *req.DriverID != 0 {
+		driver, err := uc.driverRepo.GetByID(*req.DriverID)
 		if err != nil {
 			return nil, err
 		}
@@ -79,8 +79,8 @@ func (uc *ReplacementUseCase) Create(ctx context.Context, req *request.CreateRep
 	details := make([]entity.ReplacementDetail, 0, len(req.Details))
 	for _, d := range req.Details {
 		detail := entity.ReplacementDetail{
-			Position:     d.Position,
-			Action:       d.Action,
+			Position:        d.Position,
+			Action:         d.Action,
 			OldTyreID:    d.OldTyreID,
 			NewTyreID:    d.NewTyreID,
 			OldTyreTread1: d.OldTyreTread1,
@@ -104,7 +104,7 @@ func (uc *ReplacementUseCase) Create(ctx context.Context, req *request.CreateRep
 			if newTyre == nil {
 				return nil, ErrReplacementTyreNotFound
 			}
-			if newTyre.Status != string(entity.TyreStatusSpare) {
+			if newTyre.Status != string(entity.TyreStatusSpare) && newTyre.Status != string(entity.TyreStatusDismounted) {
 				return nil, ErrReplacementTyreNotSpare
 			}
 			// Populate new tyre info
@@ -157,7 +157,7 @@ func (uc *ReplacementUseCase) Create(ctx context.Context, req *request.CreateRep
 			if newTyre == nil {
 				return nil, ErrReplacementTyreNotFound
 			}
-			if newTyre.Status != string(entity.TyreStatusSpare) {
+			if newTyre.Status != string(entity.TyreStatusSpare) && newTyre.Status != string(entity.TyreStatusDismounted) {
 				return nil, ErrReplacementTyreNotSpare
 			}
 			detail.OldTyreSerialNum = oldTyre.SerialNumber
@@ -182,12 +182,12 @@ func (uc *ReplacementUseCase) Create(ctx context.Context, req *request.CreateRep
 	replacement := &entity.Replacement{
 		CompanyID:     unit.CompanyID,
 		ProjectID:     unit.ProjectID,
-		UnitID:        req.UnitID,
-		DriverID:      req.DriverID,
+		UnitID:        *req.UnitID,
+		DriverID:      *req.DriverID,
 		Date:          date,
-		HMUpdate:      req.HMUpdate,
-		CurrentLifeHM: req.CurrentLifeHM,
-		HMPlan:        req.HMPlan,
+		HMUpdate:      derefFloat(req.HMUpdate),
+		CurrentLifeHM: derefFloat(req.CurrentLifeHM),
+		HMPlan:        derefFloat(req.HMPlan),
 		Remarks:       req.Remarks,
 		CreatedBy:     operatorID,
 		Details:       details,
@@ -205,7 +205,7 @@ func (uc *ReplacementUseCase) Create(ctx context.Context, req *request.CreateRep
 			newTyre, _ := uc.tyreRepo.GetByID(*d.NewTyreID)
 			if newTyre != nil {
 				newTyre.Status = string(entity.TyreStatusMounted)
-				newTyre.UnitID = &req.UnitID
+				newTyre.UnitID = req.UnitID
 				pos := d.Position
 				newTyre.MountedPosition = &pos
 				uc.tyreRepo.Update(newTyre)
@@ -334,6 +334,11 @@ func (uc *ReplacementUseCase) Delete(ctx context.Context, id uint) error {
 	return uc.replacementRepo.Delete(id)
 }
 
+// GetLastByUnitID returns the most recent replacement for a given unit.
+func (uc *ReplacementUseCase) GetLastByUnitID(unitID uint) (*entity.Replacement, error) {
+	return uc.replacementRepo.GetLastReplacementByUnitID(unitID)
+}
+
 // getPatternName returns the pattern name from a tyre.
 func getPatternName(tyre *entity.TyreMaster) string {
 	if tyre.Pattern != nil {
@@ -348,4 +353,11 @@ func getSizeName(tyre *entity.TyreMaster) string {
 		return tyre.Size.Name
 	}
 	return ""
+}
+
+func derefFloat(v *float64) float64 {
+	if v == nil {
+		return 0
+	}
+	return *v
 }

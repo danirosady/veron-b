@@ -198,7 +198,7 @@ func (h *UnitHandler) UpdateHM(c *gin.Context) {
 	response.Success(c, http.StatusOK, "HM berhasil diupdate", unit)
 }
 
-// GetTyres returns tyres mounted on a unit
+// GetTyres returns tyres mounted on a unit with structured position layout
 // GET /api/v1/units/:id/tyres
 func (h *UnitHandler) GetTyres(c *gin.Context) {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 32)

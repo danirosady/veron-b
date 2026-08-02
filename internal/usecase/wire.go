@@ -18,7 +18,7 @@ func NewUseCases(repos *repository.Repositories) *UseCases {
 	return &UseCases{
 		Company: NewCompanyUseCase(repos.Company, repos.Project, repos.Unit, repos.Driver),
 		Project: NewProjectUseCase(repos.Project, repos.Company, repos.Unit),
-		Unit:    NewUnitUseCase(repos.Unit, repos.Project, repos.Company, repos.Tyre),
+		Unit:    NewUnitUseCase(repos.Unit, repos.Project, repos.Company, repos.Tyre, repos.Master),
 		Driver:  NewDriverUseCase(repos.Driver, repos.Company),
 		Tyre:    NewTyreUseCase(repos.Tyre, repos.Company, repos.Master),
 		Master:  NewMasterUseCase(repos.Master),

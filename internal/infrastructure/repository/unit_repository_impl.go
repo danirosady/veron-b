@@ -56,7 +56,10 @@ func (r *unitRepository) List(page, perPage int, companyID, projectID uint, stat
 	var units []*entity.Unit
 	var total int64
 
-	query := r.db.Model(&entity.Unit{}).Where("company_id = ?", companyID)
+	query := r.db.Model(&entity.Unit{})
+	if companyID > 0 {
+		query = query.Where("company_id = ?", companyID)
+	}
 	if projectID > 0 {
 		query = query.Where("project_id = ?", projectID)
 	}

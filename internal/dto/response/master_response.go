@@ -182,7 +182,7 @@ func ToMasterRemarkResponses(entities []*entity.MasterRemark) []*MasterRemarkRes
 }
 
 type UnitTypeConfigResponse struct {
-	ID             string                 `json:"id"`
+	ID             uint                   `json:"id"`
 	UnitType       string                 `json:"unit_type"`
 	DisplayName    string                 `json:"display_name"`
 	MaxPosition    int                    `json:"max_position"`
@@ -194,7 +194,7 @@ func ToUnitTypeConfigResponse(e *entity.UnitTypeConfig) *UnitTypeConfigResponse 
 		return nil
 	}
 	return &UnitTypeConfigResponse{
-		ID:             "",
+		ID:             e.ID,
 		UnitType:       e.UnitType,
 		DisplayName:    e.DisplayName,
 		MaxPosition:    e.MaxPosition,

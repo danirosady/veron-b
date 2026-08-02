@@ -112,23 +112,9 @@ func (h *TyreHandler) GetSpareTyres(c *gin.Context) {
 }
 
 // Create creates a new tyre master record
-// POST /api/v1/tyres?company_id=X  (or company_id in body)
+// POST /api/v1/tyres?company_id=X
 func (h *TyreHandler) Create(c *gin.Context) {
-	// Support company_id from query param or body
-	companyIDParam := c.DefaultQuery("company_id", "")
-	var companyID uint64
-	if companyIDParam != "" {
-		companyID, _ = strconv.ParseUint(companyIDParam, 10, 32)
-	}
-	if companyID == 0 {
-		// Try reading from body
-		var body map[string]interface{}
-		if err := c.ShouldBindJSON(&body); err == nil {
-			if cid, ok := body["company_id"].(float64); ok {
-				companyID = uint64(cid)
-			}
-		}
-	}
+	companyID, _ := strconv.ParseUint(c.DefaultQuery("company_id", "0"), 10, 32)
 	if companyID == 0 {
 		response.BadRequest(c, "Company ID wajib diisi", nil)
 		return

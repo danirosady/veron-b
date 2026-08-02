@@ -11,6 +11,7 @@ import (
 	"github.com/tms/tyre/internal/delivery/http/middleware"
 	"github.com/tms/tyre/internal/delivery/http/response"
 	"github.com/tms/tyre/internal/dto/request"
+	respDTO "github.com/tms/tyre/internal/dto/response"
 	"github.com/tms/tyre/internal/usecase"
 )
 
@@ -64,7 +65,11 @@ func (h *ReplacementHandler) Create(c *gin.Context) {
 		return
 	}
 
-	response.Success(c, http.StatusCreated, "Replacement berhasil dibuat", replacement)
+	response.Success(c, http.StatusCreated, "Replacement berhasil dibuat", map[string]interface{}{
+		"id": replacement.ID,
+		"unit_id": replacement.UnitID,
+		"date": replacement.Date,
+	})
 }
 
 // List returns a paginated list of replacements
@@ -85,10 +90,20 @@ func (h *ReplacementHandler) List(c *gin.Context) {
 		perPage = 20
 	}
 
+	role := ""
+	tenantID := uint(0)
+	if claims, ok := middleware.GetClaims(c); ok {
+		role = claims.Role
+		tenantID = claims.TenantID
+	}
+
 	filters := map[string]interface{}{}
 	if companyID > 0 {
 		filters["company_id"] = uint(companyID)
+	} else if role != "superadmin" && tenantID > 0 {
+		filters["company_id"] = tenantID
 	}
+	// superadmin sees all — no company_id filter needed
 	if projectID > 0 {
 		filters["project_id"] = uint(projectID)
 	}
@@ -108,7 +123,7 @@ func (h *ReplacementHandler) List(c *gin.Context) {
 		return
 	}
 
-	response.SuccessWithPagination(c, "Success", replacements, response.NewPagination(page, perPage, total))
+	response.SuccessWithPagination(c, "Success", respDTO.ToReplacementResponses(replacements), response.NewPagination(page, perPage, total))
 }
 
 // GetByID returns a single replacement by ID
@@ -130,7 +145,7 @@ func (h *ReplacementHandler) GetByID(c *gin.Context) {
 		return
 	}
 
-	response.Success(c, http.StatusOK, "Success", replacement)
+	response.Success(c, http.StatusOK, "Success", respDTO.ToReplacementResponse(replacement))
 }
 
 // Update updates an existing replacement record
@@ -193,12 +208,35 @@ func (h *ReplacementHandler) Delete(c *gin.Context) {
 	response.Success(c, http.StatusOK, "Replacement berhasil dihapus", nil)
 }
 
+// GetLastByUnit returns the most recent replacement for a unit
+// GET /api/v1/replacements/unit/:id/last
+func (h *ReplacementHandler) GetLastByUnit(c *gin.Context) {
+	unitID, err := strconv.ParseUint(c.Param("id"), 10, 32)
+	if err != nil {
+		response.BadRequest(c, "ID unit tidak valid", nil)
+		return
+	}
+
+	replacement, err := h.replacementUseCase.GetLastByUnitID(uint(unitID))
+	if err != nil {
+		response.InternalError(c, "Gagal mengambil data replacement")
+		return
+	}
+
+	if replacement == nil {
+		response.Success(c, http.StatusOK, "Success", nil)
+		return
+	}
+	response.Success(c, http.StatusOK, "Success", respDTO.ToReplacementResponse(replacement))
+}
+
 // RegisterRoutes registers replacement management routes on the given router group
 func (h *ReplacementHandler) RegisterRoutes(rg *gin.RouterGroup) {
 	replacements := rg.Group("/replacements")
 	{
 		replacements.GET("", h.List)
 		replacements.GET("/:id", h.GetByID)
+		replacements.GET("/unit/:id/last", h.GetLastByUnit)
 		replacements.POST("", h.Create)
 		replacements.PUT("/:id", h.Update)
 		replacements.DELETE("/:id", h.Delete)

@@ -1,7 +1,7 @@
 package entity
 
 type PositionConfig struct {
-	Position int     `json:"position"`
+	Position string  `json:"position"`
 	Label    string  `json:"label"`
 	Side     string  `json:"side"`
 	Axle     string  `json:"axle"`

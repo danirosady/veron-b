@@ -271,7 +271,7 @@ CREATE TABLE IF NOT EXISTS tyre_master (
     company_id          BIGINT NOT NULL,
     unit_id             BIGINT NULL,
     -- NULL = spare / tidak terpasang
-    mounted_position    INTEGER NULL,
+    mounted_position    VARCHAR(20) NULL,
     -- posisi ban di unit, NULL jika tidak terpasang
 
     -- Identifikasi
@@ -291,8 +291,8 @@ CREATE TABLE IF NOT EXISTS tyre_master (
     -- Kondisi ban
     otd                 DECIMAL(5,2) NOT NULL DEFAULT 0,
     rtd                 DECIMAL(5,2) NOT NULL DEFAULT 0,
-    rtd_1               DECIMAL(5,2) NULL,
-    rtd_2               DECIMAL(5,2) NULL,
+    rtd1                DECIMAL(5,2) NULL,
+    rtd2                DECIMAL(5,2) NULL,
     lifetime             DECIMAL(15,2) NOT NULL DEFAULT 0,
     psi                  DECIMAL(5,2) NULL,
 
@@ -380,7 +380,7 @@ CREATE TABLE IF NOT EXISTS replacement_details (
     replacement_id              BIGINT NOT NULL,
 
     -- Posisi & Aksi
-    position                    INTEGER NOT NULL,
+    position                    VARCHAR(20) NOT NULL,
     action                      VARCHAR(50) NOT NULL,
     -- action: mount | dismount | swap
 

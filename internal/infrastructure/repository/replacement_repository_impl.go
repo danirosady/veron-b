@@ -22,7 +22,19 @@ func (r *replacementRepository) Create(replacement *entity.Replacement) (*entity
 	if err != nil {
 		return nil, err
 	}
-	return replacement, nil
+	var created entity.Replacement
+	err = r.db.
+		Preload("Company").
+		Preload("Project").
+		Preload("Driver").
+		Preload("Creator").
+		Preload("Details").
+		Preload("Details.FailureReason").
+		First(&created, replacement.ID).Error
+	if err != nil {
+		return nil, err
+	}
+	return &created, nil
 }
 
 func (r *replacementRepository) GetByID(id uint) (*entity.Replacement, error) {
@@ -30,12 +42,9 @@ func (r *replacementRepository) GetByID(id uint) (*entity.Replacement, error) {
 	err := r.db.
 		Preload("Company").
 		Preload("Project").
-		Preload("Unit").
 		Preload("Driver").
 		Preload("Creator").
 		Preload("Details").
-		Preload("Details.OldTyre").
-		Preload("Details.NewTyre").
 		Preload("Details.FailureReason").
 		First(&replacement, id).Error
 	if err != nil {
@@ -51,8 +60,10 @@ func (r *replacementRepository) List(page, perPage int, companyID, projectID, un
 	var replacements []*entity.Replacement
 	var total int64
 
-	query := r.db.Model(&entity.Replacement{}).Where("company_id = ?", companyID)
-
+	query := r.db.Model(&entity.Replacement{})
+	if companyID > 0 {
+		query = query.Where("company_id = ?", companyID)
+	}
 	if projectID > 0 {
 		query = query.Where("project_id = ?", projectID)
 	}
@@ -74,10 +85,10 @@ func (r *replacementRepository) List(page, perPage int, companyID, projectID, un
 	if err := query.
 		Preload("Company").
 		Preload("Project").
-		Preload("Unit").
 		Preload("Driver").
 		Preload("Creator").
 		Preload("Details").
+		Preload("Details.FailureReason").
 		Offset(offset).Limit(perPage).
 		Order("date DESC, id DESC").
 		Find(&replacements).Error; err != nil {

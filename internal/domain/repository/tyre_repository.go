@@ -12,6 +12,6 @@ type TyreRepository interface {
 	List(page, perPage int, companyID uint, status, brandID, sizeID string) ([]*entity.TyreMaster, int64, error)
 	GetByUnitID(unitID uint) ([]*entity.TyreMaster, error)
 	GetSpareTyres(companyID uint) ([]*entity.TyreMaster, error)
-	Mount(tyreID uint, unitID uint, position int) error
+	Mount(tyreID uint, unitID uint, position string) error
 	Dismount(tyreID uint, status string) error
 }

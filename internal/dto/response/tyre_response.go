@@ -6,7 +6,7 @@ type TyreResponse struct {
 	ID              uint           `json:"id"`
 	CompanyID       uint           `json:"company_id"`
 	UnitID          *uint          `json:"unit_id,omitempty"`
-	MountedPosition *int           `json:"mounted_position,omitempty"`
+	MountedPosition *string `json:"mounted_position,omitempty"`
 	Barcode         string         `json:"barcode"`
 	SerialNumber    string         `json:"serial_number"`
 	DOTCode         string         `json:"dot_code,omitempty"`
@@ -49,7 +49,7 @@ func ToTyreResponse(e *entity.TyreMaster) *TyreResponse {
 		RTD:             e.RTD,
 		RTD1:            e.RTD1,
 		RTD2:            e.RTD2,
-		Lifetime:         e.Lifetime,
+		Lifetime:        e.Lifetime,
 		PSI:             e.PSI,
 		Status:          e.Status,
 		Remarks:         e.Remarks,

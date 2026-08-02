@@ -44,7 +44,10 @@ func (r *projectRepository) List(page, perPage int, companyID uint, status strin
 	var projects []*entity.Project
 	var total int64
 
-	query := r.db.Model(&entity.Project{}).Where("company_id = ?", companyID)
+	query := r.db.Model(&entity.Project{})
+	if companyID > 0 {
+		query = query.Where("company_id = ?", companyID)
+	}
 	if status != "" {
 		query = query.Where("status = ?", status)
 	}

@@ -1,9 +1,11 @@
 package response
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/go-playground/validator/v10"
 )
 
 type FieldError struct {
@@ -74,16 +76,22 @@ func InternalError(c *gin.Context, message string) {
 // ValidationError returns a 422 response with field-level errors from binding validation
 func ValidationError(c *gin.Context, err error) {
 	var fieldErrors []FieldError
-	if ve, ok := err.(interface{ GetErrors() []interface{} }); ok {
-		for _, e := range ve.GetErrors() {
-			if fe, ok := e.(interface{ GetField() string; GetMessage() string }); ok {
-				fieldErrors = append(fieldErrors, FieldError{
-					Field:   fe.GetField(),
-					Message: fe.GetMessage(),
-				})
-			}
+
+	// Try direct type assertion first (validator.ValidationErrors is a []FieldError)
+	if ve, ok := err.(validator.ValidationErrors); ok {
+		for _, fe := range ve {
+			fieldErrors = append(fieldErrors, FieldError{
+				Field:   fe.Field(),
+				Message: fe.Tag(),
+			})
 		}
 	}
+
+	// If still empty, log error type for debugging
+	if len(fieldErrors) == 0 {
+		fmt.Printf("[DEBUG] ValidationError type: %T, msg: %s\n", err, err.Error())
+	}
+
 	Error(c, http.StatusUnprocessableEntity, "Validation failed", fieldErrors)
 }
 

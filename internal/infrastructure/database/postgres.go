@@ -23,7 +23,8 @@ func NewPostgres(cfg *configs.DatabaseConfig) (*gorm.DB, error) {
 	)
 
 	gormConfig := &gorm.Config{
-		Logger: logger.Default.LogMode(logger.Info),
+		Logger:       logger.Default.LogMode(logger.Info),
+		PrepareStmt:  false,
 	}
 
 	db, err := gorm.Open(postgres.Open(dsn), gormConfig)
