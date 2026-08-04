@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"encoding/json"
 	"errors"
 	"net/http"
 	"strconv"
@@ -8,6 +9,7 @@ import (
 	"github.com/gin-gonic/gin"
 
 	"github.com/tms/tyre/internal/delivery/http/response"
+	"github.com/tms/tyre/internal/domain/entity"
 	"github.com/tms/tyre/internal/usecase"
 )
 
@@ -528,15 +530,25 @@ func (h *MasterHandler) DeletePattern(c *gin.Context) {
 // POST /api/v1/master/unit-types
 func (h *MasterHandler) CreateUnitType(c *gin.Context) {
 	var req struct {
-		UnitType     string `json:"unit_type" binding:"required"`
-		DisplayName  string `json:"display_name" binding:"required"`
-		MaxPosition  int    `json:"max_position" binding:"required,min=1"`
+		UnitType       string                `json:"unit_type" binding:"required"`
+		DisplayName    string                `json:"display_name" binding:"required"`
+		MaxPosition    int                   `json:"max_position" binding:"required,min=1"`
+		PositionConfig json.RawMessage       `json:"position_config"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
 		response.ValidationError(c, err)
 		return
 	}
-	config, err := h.masterUseCase.CreateUnitTypeConfig(c.Request.Context(), req.UnitType, req.DisplayName, req.MaxPosition)
+
+	var positionConfigs entity.PositionConfigs
+	if req.PositionConfig != nil {
+		if err := json.Unmarshal(req.PositionConfig, &positionConfigs); err != nil {
+			response.BadRequest(c, "Format position_config tidak valid", nil)
+			return
+		}
+	}
+
+	config, err := h.masterUseCase.CreateUnitTypeConfig(c.Request.Context(), req.UnitType, req.DisplayName, req.MaxPosition, positionConfigs)
 	if err != nil {
 		response.InternalError(c, "Gagal membuat unit type")
 		return
@@ -553,14 +565,24 @@ func (h *MasterHandler) UpdateUnitType(c *gin.Context) {
 		return
 	}
 	var req struct {
-		DisplayName string `json:"display_name" binding:"required"`
-		MaxPosition int    `json:"max_position" binding:"required,min=1"`
+		DisplayName    string                `json:"display_name" binding:"required"`
+		MaxPosition    int                   `json:"max_position" binding:"required,min=1"`
+		PositionConfig json.RawMessage       `json:"position_config"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
 		response.ValidationError(c, err)
 		return
 	}
-	config, err := h.masterUseCase.UpdateUnitTypeConfig(c.Request.Context(), uint(id), req.DisplayName, req.MaxPosition)
+
+	var positionConfigs entity.PositionConfigs
+	if req.PositionConfig != nil {
+		if err := json.Unmarshal(req.PositionConfig, &positionConfigs); err != nil {
+			response.BadRequest(c, "Format position_config tidak valid", nil)
+			return
+		}
+	}
+
+	config, err := h.masterUseCase.UpdateUnitTypeConfig(c.Request.Context(), uint(id), req.DisplayName, req.MaxPosition, positionConfigs)
 	if err != nil {
 		response.InternalError(c, "Gagal mengupdate unit type")
 		return

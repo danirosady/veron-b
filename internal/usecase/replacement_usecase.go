@@ -183,7 +183,7 @@ func (uc *ReplacementUseCase) Create(ctx context.Context, req *request.CreateRep
 		CompanyID:     unit.CompanyID,
 		ProjectID:     unit.ProjectID,
 		UnitID:        *req.UnitID,
-		DriverID:      *req.DriverID,
+		DriverID:       derefUint(req.DriverID),
 		Date:          date,
 		HMUpdate:      derefFloat(req.HMUpdate),
 		CurrentLifeHM: derefFloat(req.CurrentLifeHM),
@@ -356,6 +356,13 @@ func getSizeName(tyre *entity.TyreMaster) string {
 }
 
 func derefFloat(v *float64) float64 {
+	if v == nil {
+		return 0
+	}
+	return *v
+}
+
+func derefUint(v *uint) uint {
 	if v == nil {
 		return 0
 	}

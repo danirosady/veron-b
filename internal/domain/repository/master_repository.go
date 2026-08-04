@@ -56,7 +56,7 @@ type MasterRepository interface {
 	GetUnitTypeConfig(unitType string) (*entity.UnitTypeConfig, error)
 	ListUnitTypeConfigs() ([]*entity.UnitTypeConfig, error)
 	GetUnitTypeConfigByID(id uint) (*entity.UnitTypeConfig, error)
-	CreateUnitTypeConfig(unitType, displayName string, maxPosition int) (*entity.UnitTypeConfig, error)
-	UpdateUnitTypeConfig(id uint, displayName string, maxPosition int) (*entity.UnitTypeConfig, error)
+	CreateUnitTypeConfig(unitType, displayName string, maxPosition int, positionConfigs entity.PositionConfigs) (*entity.UnitTypeConfig, error)
+	UpdateUnitTypeConfig(id uint, displayName string, maxPosition int, positionConfigs entity.PositionConfigs) (*entity.UnitTypeConfig, error)
 	DeleteUnitTypeConfig(id uint) error
 }

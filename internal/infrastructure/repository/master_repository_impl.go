@@ -301,23 +301,25 @@ func (r *masterRepository) GetUnitTypeConfigByID(id uint) (*entity.UnitTypeConfi
 	return &config, nil
 }
 
-func (r *masterRepository) CreateUnitTypeConfig(unitType, displayName string, maxPosition int) (*entity.UnitTypeConfig, error) {
+func (r *masterRepository) CreateUnitTypeConfig(unitType, displayName string, maxPosition int, positionConfigs entity.PositionConfigs) (*entity.UnitTypeConfig, error) {
 	config := &entity.UnitTypeConfig{
-		UnitType:    unitType,
-		DisplayName: displayName,
-		MaxPosition: maxPosition,
+		UnitType:       unitType,
+		DisplayName:    displayName,
+		MaxPosition:    maxPosition,
+		PositionConfig: positionConfigs,
 	}
 	err := r.db.Create(config).Error
 	return config, err
 }
 
-func (r *masterRepository) UpdateUnitTypeConfig(id uint, displayName string, maxPosition int) (*entity.UnitTypeConfig, error) {
+func (r *masterRepository) UpdateUnitTypeConfig(id uint, displayName string, maxPosition int, positionConfigs entity.PositionConfigs) (*entity.UnitTypeConfig, error) {
 	var config entity.UnitTypeConfig
 	if err := r.db.First(&config, id).Error; err != nil {
 		return nil, err
 	}
 	config.DisplayName = displayName
 	config.MaxPosition = maxPosition
+	config.PositionConfig = positionConfigs
 	if err := r.db.Save(&config).Error; err != nil {
 		return nil, err
 	}

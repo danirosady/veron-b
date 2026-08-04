@@ -26,8 +26,8 @@ type TyreMaster struct {
 
 	OTD       float64  `gorm:"column:otd;type:decimal(5,2);not null;default:0" json:"otd"`
 	RTD       float64  `gorm:"column:rtd;type:decimal(5,2);not null;default:0" json:"rtd"`
-	RTD1      *float64 `gorm:"column:rtd_1;type:decimal(5,2)" json:"rtd_1,omitempty"`
-	RTD2      *float64 `gorm:"column:rtd_2;type:decimal(5,2)" json:"rtd_2,omitempty"`
+	RTD1      *float64 `gorm:"column:rtd1;type:decimal(5,2)" json:"rtd_1,omitempty"`
+	RTD2      *float64 `gorm:"column:rtd2;type:decimal(5,2)" json:"rtd_2,omitempty"`
 	Lifetime  float64  `gorm:"column:lifetime;type:decimal(15,2);not null;default:0" json:"lifetime"`
 	PSI       *float64 `gorm:"column:psi;type:decimal(5,2)" json:"psi,omitempty"`
 
