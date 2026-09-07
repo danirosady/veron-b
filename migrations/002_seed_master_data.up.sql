@@ -82,17 +82,19 @@ ON CONFLICT (name) DO NOTHING;
 INSERT INTO unit_type_configs (unit_type, display_name, max_position, position_config) VALUES (
     'SANY_10POS',
     'SANY SKT 105S (10 Posisi)',
-    10,
-    '[{"position": "Pos 1", "label": "R-L1", "side": "rear_left", "axle": "rear_1", "x": 0.10, "y": 0.25},
-      {"position": "Pos 2", "label": "R-L2", "side": "rear_left", "axle": "rear_1", "x": 0.25, "y": 0.25},
-      {"position": "Pos 3", "label": "R-L3", "side": "rear_left", "axle": "rear_2", "x": 0.40, "y": 0.25},
-      {"position": "Pos 4", "label": "R-R1", "side": "rear_right", "axle": "rear_1", "x": 0.60, "y": 0.25},
-      {"position": "Pos 5", "label": "R-R2", "side": "rear_right", "axle": "rear_2", "x": 0.75, "y": 0.25},
-      {"position": "Pos 6", "label": "R-R3", "side": "rear_right", "axle": "rear_2", "x": 0.90, "y": 0.25},
-      {"position": "Pos 7", "label": "R-L4", "side": "rear_left", "axle": "bogie", "x": 0.17, "y": 0.55},
-      {"position": "Pos 8", "label": "R-R4", "side": "rear_right", "axle": "bogie", "x": 0.83, "y": 0.55},
-      {"position": "Pos 9", "label": "F-L1", "side": "front_left", "axle": "front", "x": 0.35, "y": 0.75},
-      {"position": "Pos 10", "label": "F-R1", "side": "front_right", "axle": "front", "x": 0.65, "y": 0.75}]'::jsonb
+    12,
+    '[{"position": "1", "label": "Tyre 1", "side": "left",  "axle": "poros_3", "x": 0.10, "y": 0.25, "mirror_of": "2"},
+      {"position": "2", "label": "Tyre 2", "side": "right", "axle": "poros_3", "x": 0.25, "y": 0.25, "mirror_of": "1"},
+      {"position": "3", "label": "Tyre 3", "side": "left",  "axle": "poros_3", "x": 0.40, "y": 0.25, "mirror_of": "4"},
+      {"position": "4", "label": "Tyre 4", "side": "right", "axle": "poros_3", "x": 0.60, "y": 0.25, "mirror_of": "3"},
+      {"position": "5", "label": "Tyre 5", "side": "left",  "axle": "poros_4", "x": 0.40, "y": 0.25, "mirror_of": "6"},
+      {"position": "6", "label": "Tyre 6", "side": "right", "axle": "poros_4", "x": 0.75, "y": 0.25, "mirror_of": "5"},
+      {"position": "7", "label": "Tyre 7", "side": "left",  "axle": "poros_4", "x": 0.90, "y": 0.25, "mirror_of": "8"},
+      {"position": "8", "label": "Tyre 8", "side": "right", "axle": "poros_4", "x": 0.60, "y": 0.25, "mirror_of": "7"},
+      {"position": "9", "label": "Tyre 9", "side": "left",  "axle": "poros_2", "x": 0.17, "y": 0.55, "mirror_of": "10"},
+      {"position": "10","label": "Tyre 10","side": "right", "axle": "poros_2", "x": 0.83, "y": 0.55, "mirror_of": "9"},
+      {"position": "11","label": "Tyre 11","side": "left",  "axle": "poros_1", "x": 0.35, "y": 0.75, "mirror_of": "12"},
+      {"position": "12","label": "Tyre 12","side": "right", "axle": "poros_1", "x": 0.65, "y": 0.75, "mirror_of": "11"}]'::jsonb
 )
 ON CONFLICT (unit_type) DO NOTHING;
 
@@ -101,12 +103,12 @@ INSERT INTO unit_type_configs (unit_type, display_name, max_position, position_c
     'GREADER_6POS',
     'Greader (6 Posisi)',
     6,
-    '[{"position": "Pos 1", "label": "R-L", "side": "rear_left", "axle": "rear", "x": 0.20, "y": 0.30},
-      {"position": "Pos 2", "label": "R-R", "side": "rear_right", "axle": "rear", "x": 0.80, "y": 0.30},
-      {"position": "Pos 3", "label": "F-L", "side": "front_left", "axle": "front", "x": 0.30, "y": 0.70},
-      {"position": "Pos 4", "label": "F-R", "side": "front_right", "axle": "front", "x": 0.70, "y": 0.70},
-      {"position": "Pos 5", "label": "R-L2", "side": "rear_left", "axle": "rear_2", "x": 0.20, "y": 0.55},
-      {"position": "Pos 6", "label": "R-R2", "side": "rear_right", "axle": "rear_2", "x": 0.80, "y": 0.55}]'::jsonb
+    '[{"position": "1", "label": "Tyre 1", "side": "left",  "axle": "poros_5", "x": 0.20, "y": 0.30, "mirror_of": "2"},
+      {"position": "2", "label": "Tyre 2", "side": "right", "axle": "poros_5", "x": 0.80, "y": 0.30, "mirror_of": "1"},
+      {"position": "3", "label": "Tyre 3", "side": "left",  "axle": "poros_1", "x": 0.30, "y": 0.70, "mirror_of": "4"},
+      {"position": "4", "label": "Tyre 4", "side": "right", "axle": "poros_1", "x": 0.70, "y": 0.70, "mirror_of": "3"},
+      {"position": "5", "label": "Tyre 5", "side": "left",  "axle": "poros_2", "x": 0.20, "y": 0.55, "mirror_of": "6"},
+      {"position": "6", "label": "Tyre 6", "side": "right", "axle": "poros_2", "x": 0.80, "y": 0.55, "mirror_of": "5"}]'::jsonb
 )
 ON CONFLICT (unit_type) DO NOTHING;
 
@@ -115,14 +117,14 @@ INSERT INTO unit_type_configs (unit_type, display_name, max_position, position_c
     'ADT_8POS',
     'Articulated Dump Truck (8 Posisi)',
     8,
-    '[{"position": "Pos 1", "label": "R-L1", "side": "rear_left", "axle": "rear_1", "x": 0.15, "y": 0.25},
-      {"position": "Pos 2", "label": "R-R1", "side": "rear_right", "axle": "rear_1", "x": 0.85, "y": 0.25},
-      {"position": "Pos 3", "label": "R-L2", "side": "rear_left", "axle": "rear_2", "x": 0.25, "y": 0.25},
-      {"position": "Pos 4", "label": "R-R2", "side": "rear_right", "axle": "rear_2", "x": 0.75, "y": 0.25},
-      {"position": "Pos 5", "label": "R-L3", "side": "rear_left", "axle": "bogie", "x": 0.20, "y": 0.55},
-      {"position": "Pos 6", "label": "R-R3", "side": "rear_right", "axle": "bogie", "x": 0.80, "y": 0.55},
-      {"position": "Pos 7", "label": "F-L", "side": "front_left", "axle": "front", "x": 0.35, "y": 0.75},
-      {"position": "Pos 8", "label": "F-R", "side": "front_right", "axle": "front", "x": 0.65, "y": 0.75}]'::jsonb
+    '[{"position": "1", "label": "Tyre 1", "side": "left",  "axle": "poros_3", "x": 0.15, "y": 0.25, "mirror_of": "2"},
+      {"position": "2", "label": "Tyre 2", "side": "right", "axle": "poros_3", "x": 0.85, "y": 0.25, "mirror_of": "1"},
+      {"position": "3", "label": "Tyre 3", "side": "left",  "axle": "poros_4", "x": 0.25, "y": 0.25, "mirror_of": "4"},
+      {"position": "4", "label": "Tyre 4", "side": "right", "axle": "poros_4", "x": 0.75, "y": 0.25, "mirror_of": "3"},
+      {"position": "5", "label": "Tyre 5", "side": "left",  "axle": "poros_2", "x": 0.20, "y": 0.55, "mirror_of": "6"},
+      {"position": "6", "label": "Tyre 6", "side": "right", "axle": "poros_2", "x": 0.80, "y": 0.55, "mirror_of": "5"},
+      {"position": "7", "label": "Tyre 7", "side": "left",  "axle": "poros_1", "x": 0.35, "y": 0.75, "mirror_of": "8"},
+      {"position": "8", "label": "Tyre 8", "side": "right", "axle": "poros_1", "x": 0.65, "y": 0.75, "mirror_of": "7"}]'::jsonb
 )
 ON CONFLICT (unit_type) DO NOTHING;
 

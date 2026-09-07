@@ -21,9 +21,9 @@ CROSS JOIN (VALUES
 WHERE c.name = 'Berkat Anuegrah Sejahtera'
 ON CONFLICT DO NOTHING;
 
--- Seed Units (3x SANY SKT 105S, 10 positions each)
+-- Seed Units (3x SANY SKT 105S, 12 positions each)
 INSERT INTO units (company_id, project_id, unit_id, unit_model, plate_number, tyre_size_default, unit_type, max_position, current_hm, status)
-SELECT c.id, p.id, u.unit_id, u.unit_model, u.plate, u.size, 'SANY_10POS', 10, u.hm, 'active'
+SELECT c.id, p.id, u.unit_id, u.unit_model, u.plate, u.size, 'SANY_10POS', 12, u.hm, 'active'
 FROM companies c
 CROSS JOIN projects p
 CROSS JOIN (VALUES

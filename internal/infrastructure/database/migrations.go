@@ -83,11 +83,51 @@ func splitStatements(sql string) []string {
 	var current strings.Builder
 	inString := false
 	stringChar := byte(0)
+	var dollarTag strings.Builder
+	inDollarQuote := false
 
 	for i := 0; i < len(sql); i++ {
 		c := sql[i]
 
-		if !inString && (c == '\'' || c == '"') {
+		// Dollar-quote: $tag$ ... $tag$ (tag may be empty)
+		if !inString && !inDollarQuote && c == '$' {
+			tagStart := i
+			j := i + 1
+			for j < len(sql) && sql[j] != '$' {
+				j++
+			}
+			if j < len(sql) && sql[j] == '$' {
+				tag := sql[tagStart : j+1]
+				inDollarQuote = true
+				dollarTag.Reset()
+				dollarTag.WriteString(tag)
+				current.WriteString(tag)
+				i = j
+				continue
+			}
+		}
+
+		if !inString && inDollarQuote {
+			if sql[i] == '$' {
+				j := i + 1
+				for j < len(sql) && sql[j] != '$' {
+					j++
+				}
+				if j < len(sql) && sql[j] == '$' {
+					endTag := sql[i : j+1]
+					if endTag == dollarTag.String() {
+						current.WriteString(endTag)
+						inDollarQuote = false
+						i = j // next for-loop iteration does i++, landing at j+1 (past the closing tag)
+						continue
+					}
+				}
+			}
+			current.WriteByte(c)
+			continue
+		}
+
+		if !inString && !inDollarQuote && (c == '\'' || c == '"') {
 			inString = true
 			stringChar = c
 			current.WriteByte(c)

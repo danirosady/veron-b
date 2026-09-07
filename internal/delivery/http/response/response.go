@@ -3,6 +3,7 @@ package response
 import (
 	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
@@ -80,8 +81,15 @@ func ValidationError(c *gin.Context, err error) {
 	// Try direct type assertion first (validator.ValidationErrors is a []FieldError)
 	if ve, ok := err.(validator.ValidationErrors); ok {
 		for _, fe := range ve {
+			// fe.Namespace() returns e.g. "CreateReplacementRequest.driver_id"
+			// Extract just the JSON field name (last segment after the dot)
+			fieldName := fe.Field()
+			parts := strings.Split(fe.Namespace(), ".")
+			if len(parts) >= 2 {
+				fieldName = parts[len(parts)-1]
+			}
 			fieldErrors = append(fieldErrors, FieldError{
-				Field:   fe.Field(),
+				Field:   fieldName,
 				Message: fe.Tag(),
 			})
 		}

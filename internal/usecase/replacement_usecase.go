@@ -229,6 +229,18 @@ func (uc *ReplacementUseCase) Create(ctx context.Context, req *request.CreateRep
 				uc.tyreRepo.Update(oldTyre)
 			}
 		}
+
+		// Swap: also mount the new tyre to this position
+		if d.Action == "swap" && d.NewTyreID != nil {
+			newTyre, _ := uc.tyreRepo.GetByID(*d.NewTyreID)
+			if newTyre != nil {
+				newTyre.Status = string(entity.TyreStatusMounted)
+				newTyre.UnitID = req.UnitID
+				pos := d.Position
+				newTyre.MountedPosition = &pos
+				uc.tyreRepo.Update(newTyre)
+			}
+		}
 	}
 
 	// Reload with relations

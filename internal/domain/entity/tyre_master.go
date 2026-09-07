@@ -8,9 +8,9 @@ type TyreMaster struct {
 	ID              uint `gorm:"primaryKey" json:"id"`
 	CompanyID       uint `gorm:"column:company_id;not null" json:"company_id"`
 	Company         *Company       `gorm:"foreignKey:CompanyID" json:"company,omitempty"`
-	UnitID          *uint         `gorm:"column:unit_id" json:"unit_id,omitempty"`
-	Unit            *Unit        `gorm:"foreignKey:UnitID;References:UnitID" json:"unit,omitempty"`
-	MountedPosition *string     `gorm:"column:mounted_position" json:"mounted_position,omitempty"`
+	UnitID          *uint    `gorm:"column:unit_id" json:"unit_id,omitempty"`
+	Unit            *Unit    `gorm:"-" json:"unit,omitempty"`
+	MountedPosition *string  `gorm:"column:mounted_position" json:"mounted_position,omitempty"`
 
 	Barcode      string `gorm:"column:barcode;size:100;uniqueIndex;not null" json:"barcode"`
 	SerialNumber string `gorm:"column:serial_number;size:100;uniqueIndex;not null" json:"serial_number"`

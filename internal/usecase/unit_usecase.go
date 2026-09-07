@@ -3,7 +3,6 @@ package usecase
 import (
 	"context"
 	"errors"
-	"fmt"
 	"strings"
 
 	"github.com/tms/tyre/internal/domain/entity"
@@ -280,11 +279,10 @@ func (uc *UnitUseCase) GetTyres(ctx context.Context, id uint) (*response.UnitTyr
 		}
 	}
 
-	// Build positions array from config
+	// Build positions array — only from the template config.
+	// Positions not defined in the template are not shown as placeholders.
 	var positions []*response.UnitTyrePosition
-	maxPos := unit.MaxPosition
 	if unitTypeConfig != nil {
-		maxPos = unitTypeConfig.MaxPosition
 		positions = make([]*response.UnitTyrePosition, 0, len(unitTypeConfig.PositionConfig))
 		for _, pos := range unitTypeConfig.PositionConfig {
 			tyre := tyreByPosition[pos.Position]
@@ -293,28 +291,6 @@ func (uc *UnitUseCase) GetTyres(ctx context.Context, id uint) (*response.UnitTyr
 				rtd1, rtd2 = tyre.RTD1, tyre.RTD2
 			}
 			positions = append(positions, response.ToUnitTyrePosition(pos, tyre, rtd1, rtd2))
-		}
-	} else {
-		// Fallback: generate default positions when no config exists
-		positions = make([]*response.UnitTyrePosition, 0, maxPos)
-		for i := 1; i <= maxPos; i++ {
-			label := fmt.Sprintf("Pos %d", i)
-			tyre := tyreByPosition[label]
-			status := "empty"
-			if tyre != nil {
-				status = tyre.Status
-			}
-			positions = append(positions, &response.UnitTyrePosition{
-				Position: label,
-				Label:    label,
-				Side:     "",
-				Axle:     "",
-				X:        0,
-				Y:        0,
-				Tyre:     response.ToTyreResponse(tyre),
-				RTD:      nil,
-				Status:   status,
-			})
 		}
 	}
 
