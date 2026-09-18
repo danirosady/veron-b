@@ -187,6 +187,7 @@ type UnitTypeConfigResponse struct {
 	DisplayName    string                 `json:"display_name"`
 	MaxPosition    int                    `json:"max_position"`
 	PositionConfig entity.PositionConfigs `json:"position_config"`
+	Status         string                 `json:"status"`
 }
 
 func ToUnitTypeConfigResponse(e *entity.UnitTypeConfig) *UnitTypeConfigResponse {
@@ -199,6 +200,7 @@ func ToUnitTypeConfigResponse(e *entity.UnitTypeConfig) *UnitTypeConfigResponse 
 		DisplayName:    e.DisplayName,
 		MaxPosition:    e.MaxPosition,
 		PositionConfig: e.PositionConfig,
+		Status:         e.Status,
 	}
 }
 

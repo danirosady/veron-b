@@ -11,6 +11,15 @@ import (
 	"github.com/tms/tyre/internal/dto/response"
 )
 
+// TyreStatsDTO holds aggregated tyre health stats for a unit
+type TyreStatsDTO struct {
+	Mounted int `json:"mounted"`
+	Spare   int `json:"spare"`
+	Good    int `json:"good"`
+	Warning int `json:"warning"`
+	Critical int `json:"critical"`
+}
+
 // Common errors used by the unit use case
 var (
 	ErrUnitNotFound          = errors.New("unit not found")
@@ -313,5 +322,29 @@ func (uc *UnitUseCase) GetTyres(ctx context.Context, id uint) (*response.UnitTyr
 		SpareTyres:     spareTyreResponses,
 		TotalMounted:   len(mountedTyres),
 		TotalSpare:     len(spareTyres),
+	}, nil
+}
+
+// GetTyreStats returns aggregated tyre health stats for a unit.
+func (uc *UnitUseCase) GetTyreStats(ctx context.Context, id uint) (*TyreStatsDTO, error) {
+	unit, err := uc.unitRepo.GetByID(id)
+	if err != nil {
+		return nil, err
+	}
+	if unit == nil {
+		return nil, ErrUnitNotFound
+	}
+
+	mounted, spare, good, warning, critical, err := uc.unitRepo.GetTyreStats(id)
+	if err != nil {
+		return nil, err
+	}
+
+	return &TyreStatsDTO{
+		Mounted:  mounted,
+		Spare:    spare,
+		Good:     good,
+		Warning:  warning,
+		Critical: critical,
 	}, nil
 }

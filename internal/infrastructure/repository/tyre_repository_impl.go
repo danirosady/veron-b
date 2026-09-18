@@ -16,15 +16,24 @@ type tyreRepository struct {
 // tyreWithUnit holds the result of the LEFT JOIN for the list query
 type tyreWithUnit struct {
 	entity.TyreMaster
-	// Unit fields selected from the JOIN
-	UnitID_Tyre   *uint   `gorm:"column:u_id"`
-	UnitCode      string  `gorm:"column:u_unit_id"`
-	UnitModel     string  `gorm:"column:u_unit_model"`
-	UnitPlateNum  string  `gorm:"column:u_plate_number"`
-	UnitType      string  `gorm:"column:u_unit_type"`
-	UnitStatus    string  `gorm:"column:u_status"`
-	UnitCompanyID uint    `gorm:"column:u_company_id"`
-	UnitProjectID uint    `gorm:"column:u_project_id"`
+	// Unit fields
+	UnitID_Tyre   *uint  `gorm:"column:u_id"`
+	UnitCode      string `gorm:"column:u_unit_id"`
+	UnitModel     string `gorm:"column:u_unit_model"`
+	UnitPlateNum  string `gorm:"column:u_plate_number"`
+	UnitType      string `gorm:"column:u_unit_type"`
+	UnitStatus    string `gorm:"column:u_status"`
+	UnitCompanyID uint  `gorm:"column:u_company_id"`
+	UnitProjectID uint  `gorm:"column:u_project_id"`
+	// Size fields
+	SizeID2  uint   `gorm:"column:s_id"`
+	SizeName string `gorm:"column:s_name"`
+	// Brand fields
+	BrandID2  uint   `gorm:"column:b_id"`
+	BrandName string `gorm:"column:b_name"`
+	// Pattern fields
+	PatternID2  uint   `gorm:"column:p_id"`
+	PatternName string `gorm:"column:p_name"`
 }
 
 func NewTyreRepository(db *gorm.DB) repository.TyreRepository {
@@ -149,9 +158,15 @@ func (r *tyreRepository) List(page, perPage int, companyID uint, status, brandID
 	query := `SELECT t.*,
 		u.id AS u_id, u.unit_id AS u_unit_id, u.unit_model AS u_unit_model,
 		u.plate_number AS u_plate_number, u.unit_type AS u_unit_type,
-		u.status AS u_status, u.company_id AS u_company_id, u.project_id AS u_project_id
+		u.status AS u_status, u.company_id AS u_company_id, u.project_id AS u_project_id,
+		s.id AS s_id, s.name AS s_name,
+		b.id AS b_id, b.name AS b_name,
+		p.id AS p_id, p.name AS p_name
 		FROM tyre_master t
-		LEFT JOIN units u ON u.id = t.unit_id`
+		LEFT JOIN units u ON u.id = t.unit_id
+		LEFT JOIN master_sizes s ON s.id = t.size_id
+		LEFT JOIN master_brands b ON b.id = t.brand_id
+		LEFT JOIN master_patterns p ON p.id = t.pattern_id`
 
 	args := []interface{}{}
 	where := ""
@@ -199,18 +214,26 @@ func (r *tyreRepository) List(page, perPage int, companyID uint, status, brandID
 
 	tyres := make([]*entity.TyreMaster, len(rows))
 	for i, row := range rows {
-		row.Unit = nil
 		if row.UnitID_Tyre != nil {
 			row.Unit = &entity.Unit{
-				ID:         *row.UnitID_Tyre,
-				UnitID:     row.UnitCode,
-				UnitModel:  row.UnitModel,
+				ID:          *row.UnitID_Tyre,
+				UnitID:      row.UnitCode,
+				UnitModel:   row.UnitModel,
 				PlateNumber: row.UnitPlateNum,
-				UnitType:   row.UnitType,
-				Status:     row.UnitStatus,
-				CompanyID:  row.UnitCompanyID,
-				ProjectID:  row.UnitProjectID,
+				UnitType:    row.UnitType,
+				Status:      row.UnitStatus,
+				CompanyID:   row.UnitCompanyID,
+				ProjectID:   row.UnitProjectID,
 			}
+		}
+		if row.SizeID2 > 0 {
+			row.Size = &entity.MasterSize{ID: row.SizeID2, Name: row.SizeName}
+		}
+		if row.BrandID2 > 0 {
+			row.Brand = &entity.MasterBrand{ID: row.BrandID2, Name: row.BrandName}
+		}
+		if row.PatternID2 > 0 {
+			row.Pattern = &entity.MasterPattern{ID: row.PatternID2, Name: row.PatternName}
 		}
 		tyres[i] = &row.TyreMaster
 	}

@@ -7,4 +7,5 @@ type PositionConfig struct {
 	Axle     string  `json:"axle"`
 	X        float64 `json:"x"`
 	Y        float64 `json:"y"`
+	MirrorOf string  `json:"mirror_of"`
 }

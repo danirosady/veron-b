@@ -10,6 +10,7 @@ type CompanyResponse struct {
 	Phone         string `json:"phone,omitempty"`
 	Email         string `json:"email,omitempty"`
 	Status        string `json:"status"`
+	TotalProjects int    `json:"total_projects,omitempty"`
 }
 
 func ToCompanyResponse(e *entity.Company) *CompanyResponse {
@@ -33,4 +34,20 @@ func ToCompanyResponses(entities []*entity.Company) []*CompanyResponse {
 		responses = append(responses, ToCompanyResponse(e))
 	}
 	return responses
+}
+
+func ToCompanyResponseWithProjects(e *entity.Company, totalProjects int) *CompanyResponse {
+	if e == nil {
+		return nil
+	}
+	return &CompanyResponse{
+		ID:            e.ID,
+		Name:          e.Name,
+		Address:       e.Address,
+		ContactPerson: e.ContactPerson,
+		Phone:         e.Phone,
+		Email:         e.Email,
+		Status:        e.Status,
+		TotalProjects: totalProjects,
+	}
 }

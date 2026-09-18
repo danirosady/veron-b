@@ -7,6 +7,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 
+	respDTO "github.com/tms/tyre/internal/dto/response"
 	"github.com/tms/tyre/internal/delivery/http/response"
 	"github.com/tms/tyre/internal/dto/request"
 	"github.com/tms/tyre/internal/usecase"
@@ -32,6 +33,22 @@ func (h *CompanyHandler) List(c *gin.Context) {
 	}
 	if perPage < 1 || perPage > 100 {
 		perPage = 20
+	}
+
+	includeCounts := c.Query("include") == "projects"
+
+	if includeCounts {
+		companies, counts, total, err := h.companyUseCase.ListWithCounts(c.Request.Context(), page, perPage, status)
+		if err != nil {
+			response.InternalError(c, "Gagal mengambil data company")
+			return
+		}
+		data := make([]*respDTO.CompanyResponse, len(companies))
+		for i, comp := range companies {
+			data[i] = respDTO.ToCompanyResponseWithProjects(comp, counts[i])
+		}
+		response.SuccessWithPagination(c, "Success", data, response.NewPagination(page, perPage, total))
+		return
 	}
 
 	companies, total, err := h.companyUseCase.List(c.Request.Context(), page, perPage, status)

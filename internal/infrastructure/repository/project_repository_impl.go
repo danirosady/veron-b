@@ -69,3 +69,34 @@ func (r *projectRepository) HasActiveUnits(id uint) (bool, error) {
 	err := r.db.Model(&entity.Unit{}).Where("project_id = ? AND status = 'active'", id).Count(&count).Error
 	return count > 0, err
 }
+
+func (r *projectRepository) ListWithCounts(page, perPage int, companyID uint, status string) ([]*entity.Project, []int, int64, error) {
+	var projects []*entity.Project
+	var total int64
+
+	query := r.db.Model(&entity.Project{})
+	if companyID > 0 {
+		query = query.Where("company_id = ?", companyID)
+	}
+	if status != "" {
+		query = query.Where("status = ?", status)
+	}
+
+	if err := query.Count(&total).Error; err != nil {
+		return nil, nil, 0, err
+	}
+
+	offset := (page - 1) * perPage
+	if err := query.Preload("Company").Offset(offset).Limit(perPage).Order("id DESC").Find(&projects).Error; err != nil {
+		return nil, nil, 0, err
+	}
+
+	counts := make([]int, len(projects))
+	for i, p := range projects {
+		var cnt int64
+		r.db.Model(&entity.Unit{}).Where("project_id = ?", p.ID).Count(&cnt)
+		counts[i] = int(cnt)
+	}
+
+	return projects, counts, total, nil
+}

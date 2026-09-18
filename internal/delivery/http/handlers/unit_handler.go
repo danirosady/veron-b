@@ -220,6 +220,24 @@ func (h *UnitHandler) GetTyres(c *gin.Context) {
 	response.Success(c, http.StatusOK, "Success", tyres)
 }
 
+// GetTyreStats returns aggregated tyre health stats for a unit
+// GET /api/v1/units/:id/tyre-stats
+func (h *UnitHandler) GetTyreStats(c *gin.Context) {
+	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
+	if err != nil {
+		response.BadRequest(c, "ID tidak valid", nil)
+		return
+	}
+
+	stats, err := h.unitUseCase.GetTyreStats(c.Request.Context(), uint(id))
+	if err != nil {
+		response.InternalError(c, "Gagal mengambil data tyre stats")
+		return
+	}
+
+	response.Success(c, http.StatusOK, "Success", stats)
+}
+
 // RegisterRoutes registers unit management routes on the given router group
 func (h *UnitHandler) RegisterRoutes(rg *gin.RouterGroup) {
 	units := rg.Group("/units")
@@ -231,5 +249,6 @@ func (h *UnitHandler) RegisterRoutes(rg *gin.RouterGroup) {
 		units.DELETE("/:id", h.Delete)
 		units.PUT("/:id/hm", h.UpdateHM)
 		units.GET("/:id/tyres", h.GetTyres)
+		units.GET("/:id/tyre-stats", h.GetTyreStats)
 	}
 }

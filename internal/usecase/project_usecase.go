@@ -51,6 +51,17 @@ func (uc *ProjectUseCase) List(ctx context.Context, page, perPage int, companyID
 	return uc.projectRepo.List(page, perPage, companyID, status)
 }
 
+// ListWithCounts returns a paginated list of projects with unit counts.
+func (uc *ProjectUseCase) ListWithCounts(ctx context.Context, page, perPage int, companyID uint, status string) ([]*entity.Project, []int, int64, error) {
+	if page < 1 {
+		page = 1
+	}
+	if perPage < 1 || perPage > 100 {
+		perPage = 20
+	}
+	return uc.projectRepo.ListWithCounts(page, perPage, companyID, status)
+}
+
 // GetByID returns a single project by ID.
 func (uc *ProjectUseCase) GetByID(ctx context.Context, id uint) (*entity.Project, error) {
 	project, err := uc.projectRepo.GetByID(id)

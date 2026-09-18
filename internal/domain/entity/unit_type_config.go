@@ -10,6 +10,7 @@ type UnitTypeConfig struct {
 	DisplayName    string          `gorm:"size:100;not null" json:"display_name"`
 	MaxPosition    int             `gorm:"not null" json:"max_position"`
 	PositionConfig PositionConfigs `gorm:"type:jsonb" json:"position_config"`
+	Status         string          `gorm:"size:20;not null;default:'active'" json:"status"`
 	CreatedAt      time.Time       `json:"created_at"`
 	UpdatedAt      time.Time       `json:"updated_at"`
 }

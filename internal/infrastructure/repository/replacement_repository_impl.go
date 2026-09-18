@@ -26,6 +26,7 @@ func (r *replacementRepository) Create(replacement *entity.Replacement) (*entity
 	err = r.db.
 		Preload("Company").
 		Preload("Project").
+		Preload("Unit").
 		Preload("Driver").
 		Preload("Creator").
 		Preload("Details").
@@ -42,6 +43,7 @@ func (r *replacementRepository) GetByID(id uint) (*entity.Replacement, error) {
 	err := r.db.
 		Preload("Company").
 		Preload("Project").
+		Preload("Unit").
 		Preload("Driver").
 		Preload("Creator").
 		Preload("Details").
@@ -60,29 +62,29 @@ func (r *replacementRepository) List(page, perPage int, companyID, projectID, un
 	var replacements []*entity.Replacement
 	var total int64
 
-	query := r.db.Model(&entity.Replacement{})
+	base := r.db.Model(&entity.Replacement{})
 	if companyID > 0 {
-		query = query.Where("company_id = ?", companyID)
+		base = base.Where("company_id = ?", companyID)
 	}
 	if projectID > 0 {
-		query = query.Where("project_id = ?", projectID)
+		base = base.Where("project_id = ?", projectID)
 	}
 	if unitID > 0 {
-		query = query.Where("unit_id = ?", unitID)
+		base = base.Where("unit_id = ?", unitID)
 	}
 	if dateFrom != nil {
-		query = query.Where("date >= ?", dateFrom)
+		base = base.Where("date >= ?", dateFrom)
 	}
 	if dateTo != nil {
-		query = query.Where("date <= ?", dateTo)
+		base = base.Where("date <= ?", dateTo)
 	}
 
-	if err := query.Count(&total).Error; err != nil {
+	if err := base.Count(&total).Error; err != nil {
 		return nil, 0, err
 	}
 
 	offset := (page - 1) * perPage
-	if err := query.
+	if err := base.
 		Preload("Company").
 		Preload("Project").
 		Preload("Driver").
@@ -93,6 +95,32 @@ func (r *replacementRepository) List(page, perPage int, companyID, projectID, un
 		Order("date DESC, id DESC").
 		Find(&replacements).Error; err != nil {
 		return nil, 0, err
+	}
+
+	if len(replacements) == 0 {
+		return replacements, total, nil
+	}
+
+	unitIDs := make([]uint, 0, len(replacements))
+	seen := make(map[uint]bool)
+	for _, rep := range replacements {
+		if !seen[rep.UnitID] {
+			unitIDs = append(unitIDs, rep.UnitID)
+			seen[rep.UnitID] = true
+		}
+	}
+
+	var units []*entity.Unit
+	if err := r.db.Where("id IN ?", unitIDs).Find(&units).Error; err != nil {
+		return replacements, total, nil
+	}
+
+	unitMap := make(map[uint]*entity.Unit, len(units))
+	for _, u := range units {
+		unitMap[u.ID] = u
+	}
+	for _, rep := range replacements {
+		rep.Unit = unitMap[rep.UnitID]
 	}
 
 	return replacements, total, nil

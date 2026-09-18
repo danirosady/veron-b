@@ -79,7 +79,7 @@ INSERT INTO master_remarks (name) VALUES
 ON CONFLICT (name) DO NOTHING;
 
 -- Seed unit_type_configs (SANY 10 positions)
-INSERT INTO unit_type_configs (unit_type, display_name, max_position, position_config) VALUES (
+INSERT INTO unit_type_configs (unit_type, display_name, max_position, position_config, status) VALUES (
     'SANY_10POS',
     'SANY SKT 105S (10 Posisi)',
     12,
@@ -94,12 +94,13 @@ INSERT INTO unit_type_configs (unit_type, display_name, max_position, position_c
       {"position": "9", "label": "Tyre 9", "side": "left",  "axle": "poros_2", "x": 0.17, "y": 0.55, "mirror_of": "10"},
       {"position": "10","label": "Tyre 10","side": "right", "axle": "poros_2", "x": 0.83, "y": 0.55, "mirror_of": "9"},
       {"position": "11","label": "Tyre 11","side": "left",  "axle": "poros_1", "x": 0.35, "y": 0.75, "mirror_of": "12"},
-      {"position": "12","label": "Tyre 12","side": "right", "axle": "poros_1", "x": 0.65, "y": 0.75, "mirror_of": "11"}]'::jsonb
+      {"position": "12","label": "Tyre 12","side": "right", "axle": "poros_1", "x": 0.65, "y": 0.75, "mirror_of": "11"}]'::jsonb,
+    'active'
 )
 ON CONFLICT (unit_type) DO NOTHING;
 
 -- Seed unit_type_configs (GREADER 6 positions)
-INSERT INTO unit_type_configs (unit_type, display_name, max_position, position_config) VALUES (
+INSERT INTO unit_type_configs (unit_type, display_name, max_position, position_config, status) VALUES (
     'GREADER_6POS',
     'Greader (6 Posisi)',
     6,
@@ -108,12 +109,13 @@ INSERT INTO unit_type_configs (unit_type, display_name, max_position, position_c
       {"position": "3", "label": "Tyre 3", "side": "left",  "axle": "poros_1", "x": 0.30, "y": 0.70, "mirror_of": "4"},
       {"position": "4", "label": "Tyre 4", "side": "right", "axle": "poros_1", "x": 0.70, "y": 0.70, "mirror_of": "3"},
       {"position": "5", "label": "Tyre 5", "side": "left",  "axle": "poros_2", "x": 0.20, "y": 0.55, "mirror_of": "6"},
-      {"position": "6", "label": "Tyre 6", "side": "right", "axle": "poros_2", "x": 0.80, "y": 0.55, "mirror_of": "5"}]'::jsonb
+      {"position": "6", "label": "Tyre 6", "side": "right", "axle": "poros_2", "x": 0.80, "y": 0.55, "mirror_of": "5"}]'::jsonb,
+    'active'
 )
 ON CONFLICT (unit_type) DO NOTHING;
 
 -- Seed unit_type_configs (ADT 8 positions)
-INSERT INTO unit_type_configs (unit_type, display_name, max_position, position_config) VALUES (
+INSERT INTO unit_type_configs (unit_type, display_name, max_position, position_config, status) VALUES (
     'ADT_8POS',
     'Articulated Dump Truck (8 Posisi)',
     8,
@@ -124,7 +126,8 @@ INSERT INTO unit_type_configs (unit_type, display_name, max_position, position_c
       {"position": "5", "label": "Tyre 5", "side": "left",  "axle": "poros_2", "x": 0.20, "y": 0.55, "mirror_of": "6"},
       {"position": "6", "label": "Tyre 6", "side": "right", "axle": "poros_2", "x": 0.80, "y": 0.55, "mirror_of": "5"},
       {"position": "7", "label": "Tyre 7", "side": "left",  "axle": "poros_1", "x": 0.35, "y": 0.75, "mirror_of": "8"},
-      {"position": "8", "label": "Tyre 8", "side": "right", "axle": "poros_1", "x": 0.65, "y": 0.75, "mirror_of": "7"}]'::jsonb
+      {"position": "8", "label": "Tyre 8", "side": "right", "axle": "poros_1", "x": 0.65, "y": 0.75, "mirror_of": "7"}]'::jsonb,
+    'active'
 )
 ON CONFLICT (unit_type) DO NOTHING;
 

@@ -8,5 +8,6 @@ type ProjectRepository interface {
 	Update(project *entity.Project) error
 	Delete(id uint) error
 	List(page, perPage int, companyID uint, status string) ([]*entity.Project, int64, error)
+	ListWithCounts(page, perPage int, companyID uint, status string) ([]*entity.Project, []int, int64, error)
 	HasActiveUnits(id uint) (bool, error)
 }

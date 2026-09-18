@@ -9,5 +9,6 @@ type CompanyRepository interface {
 	Update(company *entity.Company) error
 	Delete(id uint) error
 	List(page, perPage int, status string) ([]*entity.Company, int64, error)
+	ListWithCounts(page, perPage int, status string) ([]*entity.Company, []int, int64, error)
 	HasActiveData(id uint) (bool, error)
 }

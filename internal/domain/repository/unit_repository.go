@@ -12,4 +12,5 @@ type UnitRepository interface {
 	UpdateHM(id uint, hm float64) error
 	HasMountedTyres(id uint) (bool, error)
 	HasReplacements(id uint) (bool, error)
+	GetTyreStats(unitID uint) (mounted int, spare int, good int, warning int, critical int, err error)
 }

@@ -96,3 +96,31 @@ func (r *companyRepository) HasActiveData(id uint) (bool, error) {
 
 	return count > 0, nil
 }
+
+func (r *companyRepository) ListWithCounts(page, perPage int, status string) ([]*entity.Company, []int, int64, error) {
+	var companies []*entity.Company
+	var total int64
+
+	query := r.db.Model(&entity.Company{})
+	if status != "" {
+		query = query.Where("status = ?", status)
+	}
+
+	if err := query.Count(&total).Error; err != nil {
+		return nil, nil, 0, err
+	}
+
+	offset := (page - 1) * perPage
+	if err := query.Offset(offset).Limit(perPage).Order("id DESC").Find(&companies).Error; err != nil {
+		return nil, nil, 0, err
+	}
+
+	counts := make([]int, len(companies))
+	for i, c := range companies {
+		var cnt int64
+		r.db.Model(&entity.Project{}).Where("company_id = ?", c.ID).Count(&cnt)
+		counts[i] = int(cnt)
+	}
+
+	return companies, counts, total, nil
+}

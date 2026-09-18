@@ -94,3 +94,28 @@ func (r *unitRepository) HasReplacements(id uint) (bool, error) {
 	err := r.db.Model(&entity.Replacement{}).Where("unit_id = ?", id).Count(&count).Error
 	return count > 0, err
 }
+
+func (r *unitRepository) GetTyreStats(unitID uint) (mounted int, spare int, good int, warning int, critical int, err error) {
+	var tyres []*entity.TyreMaster
+	if err := r.db.Where("unit_id = ?", unitID).Find(&tyres).Error; err != nil {
+		return 0, 0, 0, 0, 0, err
+	}
+
+	for _, t := range tyres {
+		if t.Status == string(entity.TyreStatusMounted) {
+			mounted++
+			rtd := t.RTD
+			if rtd >= 15 {
+				good++
+			} else if rtd >= 5 {
+				warning++
+			} else {
+				critical++
+			}
+		} else if t.Status == string(entity.TyreStatusSpare) || t.Status == string(entity.TyreStatusDismounted) {
+			spare++
+		}
+	}
+
+	return mounted, spare, good, warning, critical, nil
+}

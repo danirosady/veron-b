@@ -164,13 +164,13 @@ func (uc *MasterUseCase) DeleteRemark(ctx context.Context, id uint) error {
 }
 
 // CreateUnitTypeConfig creates a new unit type configuration.
-func (uc *MasterUseCase) CreateUnitTypeConfig(ctx context.Context, unitType, displayName string, maxPosition int, positionConfigs entity.PositionConfigs) (*entity.UnitTypeConfig, error) {
-	return uc.masterRepo.CreateUnitTypeConfig(unitType, displayName, maxPosition, positionConfigs)
+func (uc *MasterUseCase) CreateUnitTypeConfig(ctx context.Context, unitType, displayName string, maxPosition int, positionConfigs entity.PositionConfigs, status string) (*entity.UnitTypeConfig, error) {
+	return uc.masterRepo.CreateUnitTypeConfig(unitType, displayName, maxPosition, positionConfigs, status)
 }
 
 // UpdateUnitTypeConfig updates an existing unit type configuration.
-func (uc *MasterUseCase) UpdateUnitTypeConfig(ctx context.Context, id uint, displayName string, maxPosition int, positionConfigs entity.PositionConfigs) (*entity.UnitTypeConfig, error) {
-	return uc.masterRepo.UpdateUnitTypeConfig(id, displayName, maxPosition, positionConfigs)
+func (uc *MasterUseCase) UpdateUnitTypeConfig(ctx context.Context, id uint, displayName string, maxPosition int, positionConfigs entity.PositionConfigs, status string) (*entity.UnitTypeConfig, error) {
+	return uc.masterRepo.UpdateUnitTypeConfig(id, displayName, maxPosition, positionConfigs, status)
 }
 
 // DeleteUnitTypeConfig deletes a unit type configuration.

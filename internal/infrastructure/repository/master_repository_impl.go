@@ -301,26 +301,38 @@ func (r *masterRepository) GetUnitTypeConfigByID(id uint) (*entity.UnitTypeConfi
 	return &config, nil
 }
 
-func (r *masterRepository) CreateUnitTypeConfig(unitType, displayName string, maxPosition int, positionConfigs entity.PositionConfigs) (*entity.UnitTypeConfig, error) {
+func (r *masterRepository) CreateUnitTypeConfig(unitType, displayName string, maxPosition int, positionConfigs entity.PositionConfigs, status string) (*entity.UnitTypeConfig, error) {
 	config := &entity.UnitTypeConfig{
 		UnitType:       unitType,
 		DisplayName:    displayName,
 		MaxPosition:    maxPosition,
 		PositionConfig: positionConfigs,
+		Status:         status,
 	}
 	err := r.db.Create(config).Error
 	return config, err
 }
 
-func (r *masterRepository) UpdateUnitTypeConfig(id uint, displayName string, maxPosition int, positionConfigs entity.PositionConfigs) (*entity.UnitTypeConfig, error) {
+func (r *masterRepository) UpdateUnitTypeConfig(id uint, displayName string, maxPosition int, positionConfigs entity.PositionConfigs, status string) (*entity.UnitTypeConfig, error) {
+	// Build the update map explicitly — GORM's Updates() with a map only
+	// touches the named fields, so nothing gets accidentally zeroed out.
+	updates := map[string]interface{}{
+		"display_name": displayName,
+		"max_position": maxPosition,
+		"status":       status,
+	}
+	// Only include position_config in the update if the caller actually
+	// provided data. This prevents wiping the existing value on partial edits.
+	if len(positionConfigs) > 0 {
+		updates["position_config"] = positionConfigs
+	}
+
 	var config entity.UnitTypeConfig
-	if err := r.db.First(&config, id).Error; err != nil {
+	if err := r.db.Model(&config).Where("id = ?", id).Updates(updates).Error; err != nil {
 		return nil, err
 	}
-	config.DisplayName = displayName
-	config.MaxPosition = maxPosition
-	config.PositionConfig = positionConfigs
-	if err := r.db.Save(&config).Error; err != nil {
+	// Reload so the returned struct has the current DB state.
+	if err := r.db.First(&config, id).Error; err != nil {
 		return nil, err
 	}
 	return &config, nil

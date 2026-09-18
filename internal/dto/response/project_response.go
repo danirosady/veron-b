@@ -14,6 +14,7 @@ type ProjectResponse struct {
 	StartDate *time.Time `json:"start_date,omitempty"`
 	EndDate   *time.Time `json:"end_date,omitempty"`
 	Status    string     `json:"status"`
+	TotalUnits int       `json:"total_units,omitempty"`
 }
 
 func ToProjectResponse(e *entity.Project) *ProjectResponse {
@@ -37,4 +38,20 @@ func ToProjectResponses(entities []*entity.Project) []*ProjectResponse {
 		responses = append(responses, ToProjectResponse(e))
 	}
 	return responses
+}
+
+func ToProjectResponseWithUnits(e *entity.Project, totalUnits int) *ProjectResponse {
+	if e == nil {
+		return nil
+	}
+	return &ProjectResponse{
+		ID:        e.ID,
+		CompanyID: e.CompanyID,
+		Name:      e.Name,
+		Location:  e.Location,
+		StartDate: e.StartDate,
+		EndDate:   e.EndDate,
+		Status:    e.Status,
+		TotalUnits: totalUnits,
+	}
 }

@@ -530,14 +530,20 @@ func (h *MasterHandler) DeletePattern(c *gin.Context) {
 // POST /api/v1/master/unit-types
 func (h *MasterHandler) CreateUnitType(c *gin.Context) {
 	var req struct {
-		UnitType       string                `json:"unit_type" binding:"required"`
-		DisplayName    string                `json:"display_name" binding:"required"`
-		MaxPosition    int                   `json:"max_position" binding:"required,min=1"`
-		PositionConfig json.RawMessage       `json:"position_config"`
+		UnitType       string          `json:"unit_type" binding:"required"`
+		DisplayName    string          `json:"display_name" binding:"required"`
+		MaxPosition    int             `json:"max_position" binding:"required,min=1"`
+		PositionConfig json.RawMessage `json:"position_config"`
+		Status         string          `json:"status"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
 		response.ValidationError(c, err)
 		return
+	}
+
+	status := req.Status
+	if status == "" {
+		status = "active"
 	}
 
 	var positionConfigs entity.PositionConfigs
@@ -548,7 +554,7 @@ func (h *MasterHandler) CreateUnitType(c *gin.Context) {
 		}
 	}
 
-	config, err := h.masterUseCase.CreateUnitTypeConfig(c.Request.Context(), req.UnitType, req.DisplayName, req.MaxPosition, positionConfigs)
+	config, err := h.masterUseCase.CreateUnitTypeConfig(c.Request.Context(), req.UnitType, req.DisplayName, req.MaxPosition, positionConfigs, status)
 	if err != nil {
 		response.InternalError(c, "Gagal membuat unit type")
 		return
@@ -565,13 +571,19 @@ func (h *MasterHandler) UpdateUnitType(c *gin.Context) {
 		return
 	}
 	var req struct {
-		DisplayName    string                `json:"display_name" binding:"required"`
-		MaxPosition    int                   `json:"max_position" binding:"required,min=1"`
-		PositionConfig json.RawMessage       `json:"position_config"`
+		DisplayName    string          `json:"display_name" binding:"required"`
+		MaxPosition    int             `json:"max_position" binding:"required,min=1"`
+		PositionConfig json.RawMessage `json:"position_config"`
+		Status         string          `json:"status"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
 		response.ValidationError(c, err)
 		return
+	}
+
+	status := req.Status
+	if status == "" {
+		status = "active"
 	}
 
 	var positionConfigs entity.PositionConfigs
@@ -582,7 +594,7 @@ func (h *MasterHandler) UpdateUnitType(c *gin.Context) {
 		}
 	}
 
-	config, err := h.masterUseCase.UpdateUnitTypeConfig(c.Request.Context(), uint(id), req.DisplayName, req.MaxPosition, positionConfigs)
+	config, err := h.masterUseCase.UpdateUnitTypeConfig(c.Request.Context(), uint(id), req.DisplayName, req.MaxPosition, positionConfigs, status)
 	if err != nil {
 		response.InternalError(c, "Gagal mengupdate unit type")
 		return
