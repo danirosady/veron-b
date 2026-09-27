@@ -9,6 +9,7 @@ import (
 
 	"github.com/tms/tyre/internal/delivery/http/response"
 	"github.com/tms/tyre/internal/dto/request"
+	dtoResponse "github.com/tms/tyre/internal/dto/response"
 	"github.com/tms/tyre/internal/usecase"
 )
 
@@ -65,7 +66,24 @@ func (h *TyreHandler) GetByID(c *gin.Context) {
 		return
 	}
 
-	response.Success(c, http.StatusOK, "Success", tyre)
+	 tyreResp := dtoResponse.ToTyreResponse(tyre)
+	response.Success(c, http.StatusOK, "Success", tyreResp)
+}
+
+// GetTyreHistory returns mount/dismount history for a tyre
+// GET /api/v1/tyres/:id/history
+func (h *TyreHandler) GetTyreHistory(c *gin.Context) {
+	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
+	if err != nil {
+		response.BadRequest(c, "ID tidak valid", nil)
+		return
+	}
+	history, err := h.tyreUseCase.GetTyreHistory(c.Request.Context(), uint(id))
+	if err != nil {
+		response.InternalError(c, "Gagal mengambil mount history")
+		return
+	}
+	response.Success(c, http.StatusOK, "Success", dtoResponse.ToTyreHistoryResponses(history))
 }
 
 // GetByBarcode returns a tyre by barcode
@@ -180,6 +198,14 @@ func (h *TyreHandler) Update(c *gin.Context) {
 		switch {
 		case errors.Is(err, usecase.ErrTyreNotFound):
 			response.NotFound(c, "Tyre tidak ditemukan")
+		case errors.Is(err, usecase.ErrCompanyNotFound):
+			response.BadRequest(c, "Company tidak ditemukan", nil)
+		case errors.Is(err, usecase.ErrTyreSizeNotFound):
+			response.BadRequest(c, "Tyre size tidak ditemukan", nil)
+		case errors.Is(err, usecase.ErrTyreBrandNotFound):
+			response.BadRequest(c, "Tyre brand tidak ditemukan", nil)
+		case errors.Is(err, usecase.ErrTyrePatternNotFound):
+			response.BadRequest(c, "Tyre pattern tidak ditemukan", nil)
 		case errors.Is(err, usecase.ErrTyreRTDExceedsOTD),
 			errors.Is(err, usecase.ErrTyreRTDInvalid),
 			errors.Is(err, usecase.ErrTyrePSIOutOfRange):
@@ -224,6 +250,7 @@ func (h *TyreHandler) RegisterRoutes(rg *gin.RouterGroup) {
 		tyres.GET("/spare", h.GetSpareTyres)
 		tyres.GET("/barcode/:barcode", h.GetByBarcode)
 		tyres.GET("/:id", h.GetByID)
+		tyres.GET("/:id/history", h.GetTyreHistory)
 		tyres.PUT("/:id", h.Update)
 		tyres.DELETE("/:id", h.Delete)
 	}

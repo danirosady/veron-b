@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"errors"
+	"log/slog"
 	"net/http"
 	"strconv"
 	"strings"
@@ -60,6 +61,7 @@ func (h *ReplacementHandler) Create(c *gin.Context) {
 				response.BadRequest(c, err.Error(), nil)
 				return
 			}
+			slog.Error("Failed to create replacement", "error", err, "request", req)
 			response.InternalError(c, "Gagal membuat replacement")
 		}
 		return

@@ -22,6 +22,7 @@ var (
 	ErrReplacementDriverNotFound = errors.New("driver not found")
 	ErrReplacementInvalidAction = errors.New("invalid replacement action")
 	ErrReplacementSwapBothRequired = errors.New("swap action requires both old_tyre_id and new_tyre_id")
+	ErrReplacementPositionOccupied = errors.New("position already has a mounted tyre, use swap action instead")
 )
 
 // ReplacementUseCase handles business logic for tyre replacement operations.
@@ -107,6 +108,16 @@ func (uc *ReplacementUseCase) Create(ctx context.Context, req *request.CreateRep
 			if newTyre.Status != string(entity.TyreStatusSpare) && newTyre.Status != string(entity.TyreStatusDismounted) {
 				return nil, ErrReplacementTyreNotSpare
 			}
+			// Guard: prevent mounting on a position that already has a tyre
+			mountedTyres, err := uc.tyreRepo.GetByUnitID(*req.UnitID)
+			if err != nil {
+				return nil, err
+			}
+			for _, t := range mountedTyres {
+				if t.MountedPosition != nil && *t.MountedPosition == d.Position {
+					return nil, ErrReplacementPositionOccupied
+				}
+			}
 			// Populate new tyre info
 			detail.NewTyreSerialNum = newTyre.SerialNumber
 			detail.NewTyrePattern = getPatternName(newTyre)
@@ -159,6 +170,16 @@ func (uc *ReplacementUseCase) Create(ctx context.Context, req *request.CreateRep
 			}
 			if newTyre.Status != string(entity.TyreStatusSpare) && newTyre.Status != string(entity.TyreStatusDismounted) {
 				return nil, ErrReplacementTyreNotSpare
+			}
+			// Guard: target position must not be occupied by a different tyre
+			mountedTyres, err := uc.tyreRepo.GetByUnitID(*req.UnitID)
+			if err != nil {
+				return nil, err
+			}
+			for _, t := range mountedTyres {
+				if t.MountedPosition != nil && *t.MountedPosition == d.Position && t.ID != *d.OldTyreID {
+					return nil, ErrReplacementPositionOccupied
+				}
 			}
 			detail.OldTyreSerialNum = oldTyre.SerialNumber
 			detail.OldTyrePattern = getPatternName(oldTyre)

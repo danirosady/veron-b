@@ -18,7 +18,7 @@ type UpdateUnitRequest struct {
 	TyreSizeDefault string  `json:"tyre_size_default" binding:"required,max=50"`
 	UnitType        string  `json:"unit_type" binding:"required,max=50"`
 	MaxPosition     int     `json:"max_position" binding:"required,min=1,max=20"`
-	Status          string  `json:"status" binding:"omitempty,oneof=active inactive"`
+	Status          string  `json:"status" binding:"omitempty,oneof=active inactive maintenance"`
 }
 
 type UpdateUnitHMRequest struct {

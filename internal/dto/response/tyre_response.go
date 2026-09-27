@@ -1,32 +1,35 @@
 package response
 
-import "github.com/tms/tyre/internal/domain/entity"
+import (
+	"github.com/tms/tyre/internal/domain/entity"
+)
 
 type TyreResponse struct {
-	ID              uint           `json:"id"`
-	CompanyID       uint           `json:"company_id"`
-	UnitID          *uint          `json:"unit_id,omitempty"`
-	MountedPosition *string `json:"mounted_position,omitempty"`
-	Barcode         string         `json:"barcode"`
-	SerialNumber    string         `json:"serial_number"`
-	DOTCode         string         `json:"dot_code,omitempty"`
-	Type            string         `json:"type"`
-	SizeID          uint           `json:"size_id"`
-	BrandID         uint           `json:"brand_id"`
-	PatternID       uint           `json:"pattern_id"`
-	OTD             float64        `json:"otd"`
-	RTD             float64        `json:"rtd"`
-	RTD1            *float64       `json:"rtd_1,omitempty"`
-	RTD2            *float64       `json:"rtd_2,omitempty"`
-	Lifetime        float64        `json:"lifetime"`
-	PSI             *float64       `json:"psi,omitempty"`
-	Status          string         `json:"status"`
-	Remarks         string         `json:"remarks,omitempty"`
-	Company         *entity.Company       `json:"company,omitempty"`
-	Unit            *entity.Unit         `json:"unit,omitempty"`
-	Size            *entity.MasterSize   `json:"size,omitempty"`
-	Brand           *entity.MasterBrand  `json:"brand,omitempty"`
-	Pattern         *entity.MasterPattern `json:"pattern,omitempty"`
+	ID              uint                `json:"id"`
+	CompanyID       uint                `json:"company_id"`
+	UnitID          *uint               `json:"unit_id,omitempty"`
+	MountedPosition *string             `json:"mounted_position,omitempty"`
+	CurrentMount    *entity.CurrentMount `json:"current_mount,omitempty"`
+	Barcode         string              `json:"barcode"`
+	SerialNumber    string              `json:"serial_number"`
+	DOTCode         string              `json:"dot_code,omitempty"`
+	Type            string              `json:"type"`
+	SizeID          uint                `json:"size_id"`
+	BrandID         uint                `json:"brand_id"`
+	PatternID       uint                `json:"pattern_id"`
+	OTD             float64             `json:"otd"`
+	RTD             float64             `json:"rtd"`
+	RTD1            *float64            `json:"rtd_1,omitempty"`
+	RTD2            *float64            `json:"rtd_2,omitempty"`
+	Lifetime        float64             `json:"lifetime"`
+	PSI             *float64            `json:"psi,omitempty"`
+	Status          string              `json:"status"`
+	Remarks         string              `json:"remarks,omitempty"`
+	Company         *entity.Company         `json:"company,omitempty"`
+	Unit            *entity.Unit             `json:"unit,omitempty"`
+	Size            *entity.MasterSize      `json:"size,omitempty"`
+	Brand           *entity.MasterBrand     `json:"brand,omitempty"`
+	Pattern         *entity.MasterPattern   `json:"pattern,omitempty"`
 }
 
 func ToTyreResponse(e *entity.TyreMaster) *TyreResponse {
@@ -38,6 +41,7 @@ func ToTyreResponse(e *entity.TyreMaster) *TyreResponse {
 		CompanyID:       e.CompanyID,
 		UnitID:          e.UnitID,
 		MountedPosition: e.MountedPosition,
+		CurrentMount:    e.CurrentMount,
 		Barcode:         e.Barcode,
 		SerialNumber:    e.SerialNumber,
 		DOTCode:         e.DOTCode,

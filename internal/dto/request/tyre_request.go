@@ -18,6 +18,10 @@ type CreateTyreRequest struct {
 }
 
 type UpdateTyreRequest struct {
+	CompanyID    uint     `json:"company_id"`
+	BrandID      uint     `json:"brand_id"`
+	SizeID       uint     `json:"size_id"`
+	PatternID    uint     `json:"pattern_id"`
 	DOTCode      string   `json:"dot_code" binding:"max=100"`
 	Type         string   `json:"type" binding:"max=50"`
 	RTD          float64  `json:"rtd" binding:"required,gte=0"`

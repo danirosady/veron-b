@@ -3,6 +3,7 @@ package repository
 import (
 	"errors"
 	"strconv"
+	"time"
 
 	"github.com/tms/tyre/internal/domain/entity"
 	"github.com/tms/tyre/internal/domain/repository"
@@ -23,8 +24,8 @@ type tyreWithUnit struct {
 	UnitPlateNum  string `gorm:"column:u_plate_number"`
 	UnitType      string `gorm:"column:u_unit_type"`
 	UnitStatus    string `gorm:"column:u_status"`
-	UnitCompanyID uint  `gorm:"column:u_company_id"`
-	UnitProjectID uint  `gorm:"column:u_project_id"`
+	UnitCompanyID uint   `gorm:"column:u_company_id"`
+	UnitProjectID uint   `gorm:"column:u_project_id"`
 	// Size fields
 	SizeID2  uint   `gorm:"column:s_id"`
 	SizeName string `gorm:"column:s_name"`
@@ -63,6 +64,55 @@ func (r *tyreRepository) loadUnit(tyre *entity.TyreMaster) {
 	}
 }
 
+// loadCurrentMount fetches the most recent mount record for a tyre from replacement_details
+func (r *tyreRepository) loadCurrentMount(tyre *entity.TyreMaster) {
+	if tyre.Status != "mounted" {
+		return
+	}
+	var row struct {
+		Position  string    `gorm:"column:position"`
+		MountDate time.Time `gorm:"column:mount_date"`
+		MountHM   float64   `gorm:"column:hm_update"`
+		UnitID    uint      `gorm:"column:unit_id"`
+		UnitCode  string    `gorm:"column:unit_id_str"`
+		UnitPlate string    `gorm:"column:plate_number"`
+		UnitType  string    `gorm:"column:unit_type"`
+		UnitStat  string    `gorm:"column:u_status"`
+	}
+	err := r.db.Raw(`
+		SELECT
+			rd.position,
+			rd.created_at AS mount_date,
+			r.hm_update,
+			u.id AS unit_id,
+			u.unit_id AS unit_id_str,
+			u.plate_number,
+			u.unit_type,
+			u.status AS u_status
+		FROM replacement_details rd
+		JOIN replacements r ON r.id = rd.replacement_id
+		JOIN units u ON u.id = r.unit_id
+		WHERE rd.new_tyre_id = ? AND rd.action = 'mount'
+		ORDER BY rd.created_at DESC
+		LIMIT 1
+	`, tyre.ID).Scan(&row).Error
+	if err != nil || row.UnitID == 0 {
+		return
+	}
+	tyre.CurrentMount = &entity.CurrentMount{
+		Position:  row.Position,
+		MountDate: row.MountDate,
+		MountHM:   row.MountHM,
+		Unit: &entity.Unit{
+			ID:          row.UnitID,
+			UnitID:      row.UnitCode,
+			PlateNumber: row.UnitPlate,
+			UnitType:    row.UnitType,
+			Status:      row.UnitStat,
+		},
+	}
+}
+
 func (r *tyreRepository) Create(tyre *entity.TyreMaster) error {
 	return r.db.Create(tyre).Error
 }
@@ -82,6 +132,7 @@ func (r *tyreRepository) GetByID(id uint) (*entity.TyreMaster, error) {
 		return nil, err
 	}
 	r.loadUnit(&tyre)
+	r.loadCurrentMount(&tyre)
 	return &tyre, nil
 }
 
@@ -100,6 +151,7 @@ func (r *tyreRepository) GetByBarcode(barcode string) (*entity.TyreMaster, error
 		return nil, err
 	}
 	r.loadUnit(&tyre)
+	r.loadCurrentMount(&tyre)
 	return &tyre, nil
 }
 
@@ -118,11 +170,12 @@ func (r *tyreRepository) GetBySerialNumber(sn string) (*entity.TyreMaster, error
 		return nil, err
 	}
 	r.loadUnit(&tyre)
+	r.loadCurrentMount(&tyre)
 	return &tyre, nil
 }
 
 func (r *tyreRepository) Update(tyre *entity.TyreMaster) error {
-	return r.db.Save(tyre).Error
+	return r.db.Model(tyre).Select("brand_id", "size_id", "pattern_id", "type", "rtd", "rtd1", "rtd2", "psi", "remarks", "status", "dot_code").Updates(tyre).Error
 }
 
 func (r *tyreRepository) Delete(id uint) error {
@@ -272,7 +325,7 @@ func (r *tyreRepository) Mount(tyreID uint, unitID uint, position string) error 
 		Where("id = ?", tyreID).
 		Updates(map[string]interface{}{
 			"unit_id":           unitID,
-			"mounted_position": position,
+			"mounted_position":  position,
 			"status":            "mounted",
 		}).Error
 }
@@ -282,7 +335,59 @@ func (r *tyreRepository) Dismount(tyreID uint, status string) error {
 		Where("id = ?", tyreID).
 		Updates(map[string]interface{}{
 			"unit_id":           nil,
-			"mounted_position": nil,
+			"mounted_position":  nil,
 			"status":            status,
 		}).Error
+}
+
+func (r *tyreRepository) GetTyreHistory(tyreID uint) ([]*entity.TyreHistoryItem, error) {
+	rows, err := r.db.Raw(`
+		SELECT
+			rd.id,
+			rd.created_at AS replacement_date,
+			r.hm_update AS hm,
+			rd.position,
+			rd.action,
+			COALESCE(rd.new_tyre_tread_1, rd.new_tyre_tread_2) AS rtd,
+			rd.remark AS remarks,
+			u.id AS unit_id,
+			u.unit_id AS unit_code,
+			u.plate_number AS unit_plate_number,
+			u.unit_type AS unit_type,
+			u.status AS unit_status
+		FROM replacement_details rd
+		JOIN replacements r ON r.id = rd.replacement_id
+		JOIN units u ON u.id = r.unit_id
+		WHERE rd.new_tyre_id = ? OR rd.old_tyre_id = ?
+		ORDER BY rd.created_at DESC
+	`, tyreID, tyreID).Rows()
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var items []*entity.TyreHistoryItem
+	for rows.Next() {
+		var item entity.TyreHistoryItem
+		var unitID *uint
+		var unitCode, unitPlate, unitType, unitStatus string
+
+		rows.Scan(
+			&item.ID, &item.ReplacementDate, &item.HM,
+			&item.Position, &item.Action, &item.RTD, &item.Remarks,
+			&unitID, &unitCode, &unitPlate, &unitType, &unitStatus,
+		)
+
+		if unitID != nil {
+			item.Unit = &entity.Unit{
+				ID:          *unitID,
+				UnitID:      unitCode,
+				PlateNumber: unitPlate,
+				UnitType:    unitType,
+				Status:      unitStatus,
+			}
+		}
+		items = append(items, &item)
+	}
+	return items, nil
 }

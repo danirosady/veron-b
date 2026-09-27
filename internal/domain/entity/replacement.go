@@ -11,7 +11,7 @@ type Replacement struct {
 	ProjectID   uint       `gorm:"column:project_id;not null" json:"project_id"`
 	Project     *Project   `gorm:"foreignKey:ProjectID" json:"project,omitempty"`
 	UnitID      uint       `gorm:"column:unit_id;not null" json:"unit_id"`
-	Unit        *Unit      `gorm:"foreignKey:UnitID;references:ID" json:"unit,omitempty"`
+	Unit        *Unit      `gorm:"foreignKey:UnitID;references:ID;constraint:-" json:"unit,omitempty"`
 	DriverID    uint       `gorm:"column:driver_id;not null" json:"driver_id"`
 	Driver      *Driver    `gorm:"foreignKey:DriverID" json:"driver,omitempty"`
 	Date        time.Time  `gorm:"column:date;type:date;not null" json:"date"`

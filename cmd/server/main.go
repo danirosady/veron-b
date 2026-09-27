@@ -16,7 +16,61 @@ import (
 	"github.com/tms/tyre/internal/infrastructure/logger"
 )
 
+// runDownMigrationOnly applies the last down migration and exits
+func runDownMigrationOnly() {
+	cfg := configs.LoadFromEnv()
+	db, err := database.NewPostgres(&cfg.Database)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Failed to connect: %v\n", err)
+		os.Exit(1)
+	}
+	defer func() {
+		sqlDB, _ := db.DB()
+		if sqlDB != nil {
+			sqlDB.Close()
+		}
+	}()
+	if err := database.RunDownMigrations(db); err != nil {
+		fmt.Fprintf(os.Stderr, "Migration down failed: %v\n", err)
+		os.Exit(1)
+	}
+	fmt.Println("Migration down completed.")
+}
+
+// runUpMigrationOnly runs pending up migrations and exits
+func runUpMigrationOnly() {
+	cfg := configs.LoadFromEnv()
+	db, err := database.NewPostgres(&cfg.Database)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Failed to connect: %v\n", err)
+		os.Exit(1)
+	}
+	defer func() {
+		sqlDB, _ := db.DB()
+		if sqlDB != nil {
+			sqlDB.Close()
+		}
+	}()
+	if err := database.RunMigrations(db); err != nil {
+		fmt.Fprintf(os.Stderr, "Migration up failed: %v\n", err)
+		os.Exit(1)
+	}
+	fmt.Println("Migration up completed.")
+}
+
 func main() {
+	// Check for CLI-only flags before starting the server
+	if len(os.Args) > 1 {
+		switch os.Args[1] {
+		case "--migrate-down":
+			runDownMigrationOnly()
+			return
+		case "--migrate-up":
+			runUpMigrationOnly()
+			return
+		}
+	}
+
 	cfg := configs.LoadFromEnv()
 
 	logger.InitLogger(cfg.App.Env)

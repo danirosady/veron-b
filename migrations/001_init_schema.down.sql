@@ -1,17 +1,27 @@
--- Reverse order of up migration
-DROP TABLE IF EXISTS replacement_details CASCADE;
-DROP TABLE IF EXISTS replacements CASCADE;
-DROP TABLE IF EXISTS tyre_master CASCADE;
-DROP TABLE IF EXISTS units CASCADE;
-DROP TABLE IF EXISTS unit_type_configs CASCADE;
-DROP TABLE IF EXISTS master_remarks CASCADE;
-DROP TABLE IF EXISTS master_actions CASCADE;
-DROP TABLE IF EXISTS master_reasons CASCADE;
-DROP TABLE IF EXISTS master_patterns CASCADE;
-DROP TABLE IF EXISTS master_types CASCADE;
-DROP TABLE IF EXISTS master_sizes CASCADE;
-DROP TABLE IF EXISTS master_brands CASCADE;
-DROP TABLE IF EXISTS drivers CASCADE;
-DROP TABLE IF EXISTS projects CASCADE;
-DROP TABLE IF EXISTS users CASCADE;
-DROP TABLE IF EXISTS companies CASCADE;
+-- ============================================================
+-- Rollback: 001_init_schema
+-- Truncate all tables in reverse dependency order (child → parent)
+-- RESTART IDENTITY to reset serial counters
+-- ============================================================
+
+TRUNCATE
+    replacement_details,
+    replacements,
+    tyre_master,
+    units,
+    drivers,
+    projects,
+    companies
+RESTART IDENTITY CASCADE;
+
+TRUNCATE
+    unit_type_configs,
+    master_patterns,
+    master_reasons,
+    master_actions,
+    master_remarks,
+    master_types,
+    master_sizes,
+    master_brands,
+    users
+RESTART IDENTITY CASCADE;

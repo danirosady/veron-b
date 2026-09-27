@@ -26,7 +26,6 @@ func (r *replacementRepository) Create(replacement *entity.Replacement) (*entity
 	err = r.db.
 		Preload("Company").
 		Preload("Project").
-		Preload("Unit").
 		Preload("Driver").
 		Preload("Creator").
 		Preload("Details").
@@ -34,6 +33,13 @@ func (r *replacementRepository) Create(replacement *entity.Replacement) (*entity
 		First(&created, replacement.ID).Error
 	if err != nil {
 		return nil, err
+	}
+	// Manually load Unit since GORM auto-relation is confused by units.unit_id column
+	if created.UnitID > 0 {
+		var unit entity.Unit
+		if err := r.db.First(&unit, created.UnitID).Error; err == nil {
+			created.Unit = &unit
+		}
 	}
 	return &created, nil
 }
@@ -43,7 +49,6 @@ func (r *replacementRepository) GetByID(id uint) (*entity.Replacement, error) {
 	err := r.db.
 		Preload("Company").
 		Preload("Project").
-		Preload("Unit").
 		Preload("Driver").
 		Preload("Creator").
 		Preload("Details").
@@ -54,6 +59,13 @@ func (r *replacementRepository) GetByID(id uint) (*entity.Replacement, error) {
 			return nil, nil
 		}
 		return nil, err
+	}
+	// Manually load Unit since GORM auto-relation is confused by units.unit_id column
+	if replacement.UnitID > 0 {
+		var unit entity.Unit
+		if err := r.db.First(&unit, replacement.UnitID).Error; err == nil {
+			replacement.Unit = &unit
+		}
 	}
 	return &replacement, nil
 }

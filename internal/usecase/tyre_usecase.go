@@ -255,13 +255,34 @@ func (uc *TyreUseCase) Update(ctx context.Context, id uint, req *request.UpdateT
 		}
 	}
 
+	// Validate and update related entities
+	if req.CompanyID > 0 {
+		company, err := uc.companyRepo.GetByID(req.CompanyID)
+		if err != nil || company == nil {
+			return nil, ErrCompanyNotFound
+		}
+		tyre.CompanyID = req.CompanyID
+	}
+
+	if req.BrandID > 0 {
+		tyre.BrandID = req.BrandID
+	}
+
+	if req.SizeID > 0 {
+		tyre.SizeID = req.SizeID
+	}
+
+	if req.PatternID > 0 {
+		tyre.PatternID = req.PatternID
+	}
+
 	rtd := req.RTD
 	if req.RTD1 != nil && req.RTD2 != nil {
 		rtd = (*req.RTD1 + *req.RTD2) / 2.0
 	}
 
 	tyre.DOTCode = req.DOTCode
-	if strings.TrimSpace(req.Type) != "" {
+	if req.Type != "" {
 		tyre.Type = req.Type
 	}
 	tyre.RTD = rtd
@@ -290,4 +311,9 @@ func (uc *TyreUseCase) Delete(ctx context.Context, id uint) error {
 		return ErrTyreNotFound
 	}
 	return uc.tyreRepo.Delete(id)
+}
+
+// GetTyreHistory returns all mount/dismount history for a tyre.
+func (uc *TyreUseCase) GetTyreHistory(ctx context.Context, tyreID uint) ([]*entity.TyreHistoryItem, error) {
+	return uc.tyreRepo.GetTyreHistory(tyreID)
 }

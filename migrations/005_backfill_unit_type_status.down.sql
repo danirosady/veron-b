@@ -1,1 +1,0 @@
--- Reverse backfill (no-op, status column has DB-level default)
