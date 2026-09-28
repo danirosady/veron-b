@@ -69,7 +69,47 @@ func (uc *UnitUseCase) List(ctx context.Context, page, perPage int, companyID, p
 	if perPage < 1 || perPage > 100 {
 		perPage = 20
 	}
-	return uc.unitRepo.List(page, perPage, companyID, projectID, status)
+	units, total, err := uc.unitRepo.List(page, perPage, companyID, projectID, status)
+	if err != nil {
+		return nil, 0, err
+	}
+	// Override MaxPosition from unit_type_configs
+	uc.overrideMaxPositionsFromConfig(units)
+	return units, total, nil
+}
+
+// overrideMaxPositionsFromConfig looks up unit_type_configs and sets MaxPosition on each unit.
+func (uc *UnitUseCase) overrideMaxPositionsFromConfig(units []*entity.Unit) {
+	if len(units) == 0 {
+		return
+	}
+	// Collect unique unit types
+	unitTypes := make(map[string]bool)
+	for _, u := range units {
+		if u.UnitType != "" {
+			unitTypes[u.UnitType] = true
+		}
+	}
+	if len(unitTypes) == 0 {
+		return
+	}
+	typeList := make([]string, 0, len(unitTypes))
+	for ut := range unitTypes {
+		typeList = append(typeList, ut)
+	}
+	configs, err := uc.masterRepo.GetUnitTypeConfigsByTypes(typeList)
+	if err != nil || len(configs) == 0 {
+		return
+	}
+	configMap := make(map[string]*entity.UnitTypeConfig, len(configs))
+	for _, c := range configs {
+		configMap[c.UnitType] = c
+	}
+	for _, u := range units {
+		if c, ok := configMap[u.UnitType]; ok {
+			u.MaxPosition = c.MaxPosition
+		}
+	}
 }
 
 // GetByID returns a single unit by ID.
@@ -80,6 +120,11 @@ func (uc *UnitUseCase) GetByID(ctx context.Context, id uint) (*entity.Unit, erro
 	}
 	if unit == nil {
 		return nil, ErrUnitNotFound
+	}
+	// Override MaxPosition from unit_type_configs
+	utc, _ := uc.masterRepo.GetUnitTypeConfig(unit.UnitType)
+	if utc != nil {
+		unit.MaxPosition = utc.MaxPosition
 	}
 	return unit, nil
 }
@@ -103,8 +148,12 @@ func (uc *UnitUseCase) Create(ctx context.Context, req *request.CreateUnitReques
 	if strings.TrimSpace(req.UnitType) == "" {
 		return nil, ErrUnitTypeRequired
 	}
-	if req.MaxPosition < 1 || req.MaxPosition > 20 {
-		return nil, ErrUnitInvalidPosition
+
+	// Resolve MaxPosition from unit_type_configs
+	utc, _ := uc.masterRepo.GetUnitTypeConfig(req.UnitType)
+	maxPos := 6
+	if utc != nil {
+		maxPos = utc.MaxPosition
 	}
 
 	company, err := uc.companyRepo.GetByID(req.CompanyID)
@@ -139,7 +188,7 @@ func (uc *UnitUseCase) Create(ctx context.Context, req *request.CreateUnitReques
 		PlateNumber:     req.PlateNumber,
 		TyreSizeDefault: req.TyreSizeDefault,
 		UnitType:        req.UnitType,
-		MaxPosition:     req.MaxPosition,
+		MaxPosition:     maxPos,
 		CurrentHM:       0,
 		Status:          "active",
 	}
@@ -170,8 +219,12 @@ func (uc *UnitUseCase) Update(ctx context.Context, id uint, req *request.UpdateU
 	if strings.TrimSpace(req.UnitType) == "" {
 		return nil, ErrUnitTypeRequired
 	}
-	if req.MaxPosition < 1 || req.MaxPosition > 20 {
-		return nil, ErrUnitInvalidPosition
+
+	// Resolve MaxPosition from unit_type_configs
+	utc, _ := uc.masterRepo.GetUnitTypeConfig(req.UnitType)
+	maxPos := 6
+	if utc != nil {
+		maxPos = utc.MaxPosition
 	}
 
 	project, err := uc.projectRepo.GetByID(req.ProjectID)
@@ -187,7 +240,7 @@ func (uc *UnitUseCase) Update(ctx context.Context, id uint, req *request.UpdateU
 	unit.PlateNumber = req.PlateNumber
 	unit.TyreSizeDefault = req.TyreSizeDefault
 	unit.UnitType = req.UnitType
-	unit.MaxPosition = req.MaxPosition
+	unit.MaxPosition = maxPos
 	if req.Status != "" {
 		unit.Status = req.Status
 	}
@@ -266,6 +319,11 @@ func (uc *UnitUseCase) GetTyres(ctx context.Context, id uint) (*response.UnitTyr
 	if err != nil {
 		// Config not found is ok — fall back to default layout
 		unitTypeConfig = nil
+	}
+
+	// Always use MaxPosition from unit_type_configs, not from the units table
+	if unitTypeConfig != nil {
+		unit.MaxPosition = unitTypeConfig.MaxPosition
 	}
 
 	// Get mounted tyres for this unit

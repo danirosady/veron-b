@@ -54,6 +54,7 @@ type MasterRepository interface {
 
 	// Unit Type Configs
 	GetUnitTypeConfig(unitType string) (*entity.UnitTypeConfig, error)
+	GetUnitTypeConfigsByTypes(unitTypes []string) ([]*entity.UnitTypeConfig, error)
 	ListUnitTypeConfigs() ([]*entity.UnitTypeConfig, error)
 	GetUnitTypeConfigByID(id uint) (*entity.UnitTypeConfig, error)
 	CreateUnitTypeConfig(unitType, displayName string, maxPosition int, positionConfigs entity.PositionConfigs, status string) (*entity.UnitTypeConfig, error)

@@ -286,6 +286,12 @@ func (r *masterRepository) GetUnitTypeConfig(unitType string) (*entity.UnitTypeC
 	return &config, nil
 }
 
+func (r *masterRepository) GetUnitTypeConfigsByTypes(unitTypes []string) ([]*entity.UnitTypeConfig, error) {
+	var configs []*entity.UnitTypeConfig
+	err := r.db.Where("unit_type IN ?", unitTypes).Find(&configs).Error
+	return configs, err
+}
+
 func (r *masterRepository) ListUnitTypeConfigs() ([]*entity.UnitTypeConfig, error) {
 	var configs []*entity.UnitTypeConfig
 	err := r.db.Order("display_name ASC").Find(&configs).Error
