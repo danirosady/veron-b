@@ -31,15 +31,19 @@ func (h *AuthHandler) Login(c *gin.Context) {
 
 	result, err := h.authUseCase.Login(&req)
 	if err != nil {
-		if errors.Is(err, usecase.ErrInvalidCredentials) || errors.Is(err, usecase.ErrUserInactive) {
-			response.Error(c, http.StatusUnauthorized, "Email atau password salah", nil)
+		if errors.Is(err, usecase.ErrInvalidCredentials) {
+			response.Error(c, http.StatusUnauthorized, "Email atau kata sandi salah", nil)
+			return
+		}
+		if errors.Is(err, usecase.ErrUserInactive) {
+			response.Error(c, http.StatusUnauthorized, "Akun Anda tidak aktif. Hubungi administrator", nil)
 			return
 		}
 		if errors.Is(err, usecase.ErrCompanyNotFound) {
-			response.Error(c, http.StatusUnauthorized, "Data company tidak ditemukan", nil)
+			response.Error(c, http.StatusUnauthorized, "Data perusahaan tidak ditemukan. Hubungi administrator", nil)
 			return
 		}
-		response.InternalError(c, "Gagal login")
+		response.InternalError(c, "Login gagal. Silakan coba lagi nanti")
 		return
 	}
 
@@ -58,14 +62,14 @@ func (h *AuthHandler) RefreshToken(c *gin.Context) {
 	result, err := h.authUseCase.RefreshToken(&req)
 	if err != nil {
 		if errors.Is(err, usecase.ErrTokenExpired) {
-			response.Error(c, http.StatusUnauthorized, "Token sudah expired", nil)
+			response.Error(c, http.StatusUnauthorized, "Session expired. Please login again", nil)
 			return
 		}
-		response.Error(c, http.StatusUnauthorized, "Token tidak valid", nil)
+		response.Error(c, http.StatusUnauthorized, "Invalid refresh token", nil)
 		return
 	}
 
-	response.Success(c, http.StatusOK, "Token refreshed", result)
+	response.Success(c, http.StatusOK, "Session refreshed", result)
 }
 
 // GetProfile returns the authenticated user's profile
@@ -79,7 +83,7 @@ func (h *AuthHandler) GetProfile(c *gin.Context) {
 
 	user, err := h.authUseCase.GetProfile(userID.(uint))
 	if err != nil || user == nil {
-		response.NotFound(c, "User tidak ditemukan")
+		response.NotFound(c, "User not found")
 		return
 	}
 
@@ -104,14 +108,14 @@ func (h *AuthHandler) ChangePassword(c *gin.Context) {
 	err := h.authUseCase.ChangePassword(userID.(uint), &req)
 	if err != nil {
 		if errors.Is(err, usecase.ErrInvalidCredentials) {
-			response.Error(c, http.StatusBadRequest, "Password lama salah", nil)
+			response.Error(c, http.StatusBadRequest, "Current password is incorrect", nil)
 			return
 		}
-		response.InternalError(c, "Gagal mengubah password")
+		response.InternalError(c, "Failed to change password. Please try again")
 		return
 	}
 
-	response.Success(c, http.StatusOK, "Password berhasil diubah", nil)
+	response.Success(c, http.StatusOK, "Password changed successfully", nil)
 }
 
 // RegisterPublicRoutes registers auth routes on the given router group

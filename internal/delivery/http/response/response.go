@@ -78,6 +78,16 @@ func InternalError(c *gin.Context, message string) {
 func ValidationError(c *gin.Context, err error) {
 	var fieldErrors []FieldError
 
+	// Map of validation tags to user-friendly Indonesian messages
+	tagMessages := map[string]string{
+		"required":          "Field ini wajib diisi",
+		"email":            "Format email tidak valid",
+		"min":              "Nilai terlalu pendek",
+		"max":              "Nilai terlalu panjang",
+		"eqfield":          "Nilai tidak cocok",
+		"password_strong":   "Kata sandi harus minimal 8 karakter dengan huruf besar, huruf kecil, angka, dan karakter khusus",
+	}
+
 	// Try direct type assertion first (validator.ValidationErrors is a []FieldError)
 	if ve, ok := err.(validator.ValidationErrors); ok {
 		for _, fe := range ve {
@@ -88,9 +98,21 @@ func ValidationError(c *gin.Context, err error) {
 			if len(parts) >= 2 {
 				fieldName = parts[len(parts)-1]
 			}
+
+			// Get user-friendly message based on tag
+			msg, ok := tagMessages[fe.Tag()]
+			if !ok {
+				msg = fe.Tag()
+			}
+
+			// For min/max, add the actual limit
+			if fe.Tag() == "min" || fe.Tag() == "max" {
+				msg = fmt.Sprintf("%s (minimum %s)", msg, fe.Param())
+			}
+
 			fieldErrors = append(fieldErrors, FieldError{
 				Field:   fieldName,
-				Message: fe.Tag(),
+				Message: msg,
 			})
 		}
 	}
@@ -100,7 +122,7 @@ func ValidationError(c *gin.Context, err error) {
 		fmt.Printf("[DEBUG] ValidationError type: %T, msg: %s\n", err, err.Error())
 	}
 
-	Error(c, http.StatusUnprocessableEntity, "Validation failed", fieldErrors)
+	Error(c, http.StatusUnprocessableEntity, "Mohon perbaiki kesalahan pada form", fieldErrors)
 }
 
 // SuccessWithPagination returns a success response with pagination metadata
