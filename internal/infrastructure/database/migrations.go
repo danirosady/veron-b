@@ -59,16 +59,23 @@ func RunMigrations(db *gorm.DB) error {
 			return fmt.Errorf("failed to read migration %s: %w", filename, err)
 		}
 
-		statements := splitStatements(string(content))
-		for _, stmt := range statements {
-			stmt = strings.TrimSpace(stmt)
-			if stmt == "" {
-				continue
+		// Wrap entire migration in a transaction for atomicity
+		err = db.Transaction(func(tx *gorm.DB) error {
+			statements := splitStatements(string(content))
+			for _, stmt := range statements {
+				stmt = strings.TrimSpace(stmt)
+				if stmt == "" {
+					continue
+				}
+				if err := tx.Exec(stmt).Error; err != nil {
+					return fmt.Errorf("failed to execute migration %s: %w\nStatement: %s",
+						version, err, truncate(stmt, 200))
+				}
 			}
-			if err := db.Exec(stmt).Error; err != nil {
-				return fmt.Errorf("failed to execute migration %s: %w\nStatement: %s",
-					version, err, truncate(stmt, 200))
-			}
+			return nil
+		})
+		if err != nil {
+			return err
 		}
 
 		db.Exec(`INSERT INTO schema_migrations (version) VALUES (?)`, version)

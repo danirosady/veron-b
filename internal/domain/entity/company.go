@@ -6,7 +6,7 @@ import (
 
 type Company struct {
 	ID            uint      `gorm:"primaryKey" json:"id"`
-	Name          string    `gorm:"column:name;size:255;not null" json:"name"`
+	Name          string    `gorm:"column:name;size:255;not null;uniqueIndex" json:"name"`
 	Address       string    `gorm:"column:address;type:text" json:"address,omitempty"`
 	ContactPerson string    `gorm:"column:contact_person;size:255" json:"contact_person,omitempty"`
 	Phone         string    `gorm:"column:phone;size:50" json:"phone,omitempty"`

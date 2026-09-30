@@ -29,6 +29,7 @@ func (h *TyreHandler) List(c *gin.Context) {
 	status := c.Query("status")
 	brandID := c.Query("brand_id")
 	sizeID := c.Query("size_id")
+	search := c.Query("search")
 	companyID, _ := strconv.ParseUint(c.DefaultQuery("company_id", "0"), 10, 32)
 
 	if page < 1 {
@@ -38,7 +39,7 @@ func (h *TyreHandler) List(c *gin.Context) {
 		perPage = 20
 	}
 
-	tyres, total, err := h.tyreUseCase.List(c.Request.Context(), page, perPage, uint(companyID), status, brandID, sizeID)
+	tyres, total, err := h.tyreUseCase.List(c.Request.Context(), page, perPage, uint(companyID), status, brandID, sizeID, search)
 	if err != nil {
 		response.InternalError(c, "Gagal mengambil data tyre")
 		return

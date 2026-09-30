@@ -6,9 +6,9 @@ import (
 
 type Project struct {
 	ID        uint       `gorm:"primaryKey" json:"id"`
-	CompanyID uint       `gorm:"column:company_id;not null" json:"company_id"`
+	CompanyID uint       `gorm:"column:company_id;not null;uniqueIndex:idx_projects_company_name,priority:1" json:"company_id"`
 	Company   *Company   `gorm:"foreignKey:CompanyID" json:"company,omitempty"`
-	Name      string     `gorm:"column:name;size:255;not null" json:"name"`
+	Name      string     `gorm:"column:name;size:255;not null;uniqueIndex:idx_projects_company_name,priority:2" json:"name"`
 	Location  string     `gorm:"column:location;type:text" json:"location,omitempty"`
 	StartDate *time.Time `gorm:"column:start_date" json:"start_date,omitempty"`
 	EndDate   *time.Time `gorm:"column:end_date" json:"end_date,omitempty"`

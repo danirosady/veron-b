@@ -9,10 +9,10 @@ type TyreRepository interface {
 	GetBySerialNumber(sn string) (*entity.TyreMaster, error)
 	Update(tyre *entity.TyreMaster) error
 	Delete(id uint) error
-	List(page, perPage int, companyID uint, status, brandID, sizeID string) ([]*entity.TyreMaster, int64, error)
+	List(page, perPage int, companyID uint, status, brandID, sizeID, search string) ([]*entity.TyreMaster, int64, error)
 	GetByUnitID(unitID uint) ([]*entity.TyreMaster, error)
 	GetSpareTyres(companyID uint) ([]*entity.TyreMaster, error)
-	Mount(tyreID uint, unitID uint, position string) error
-	Dismount(tyreID uint, status string) error
+	Mount(tyreID uint, unitID uint, position string, rtd1, rtd2 *float64) error
+	Dismount(tyreID uint, status string, rtd1, rtd2 *float64) error
 	GetTyreHistory(tyreID uint) ([]*entity.TyreHistoryItem, error)
 }

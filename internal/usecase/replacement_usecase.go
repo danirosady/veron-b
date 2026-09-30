@@ -139,12 +139,7 @@ func (uc *ReplacementUseCase) Create(ctx context.Context, req *request.CreateRep
 				detail.OldTyrePattern = getPatternName(oldTyre)
 				detail.OldTyreSize = getSizeName(oldTyre)
 				detail.OldTyreStatus = oldTyre.Status
-				if oldTyre.RTD1 != nil {
-					detail.OldTyreTread1 = oldTyre.RTD1
-				}
-				if oldTyre.RTD2 != nil {
-					detail.OldTyreTread2 = oldTyre.RTD2
-				}
+				// d.OldTyreTread1/2 come from user input (OldTyreTread1/2 in request) — do NOT overwrite
 			}
 
 		case "swap":
@@ -185,12 +180,7 @@ func (uc *ReplacementUseCase) Create(ctx context.Context, req *request.CreateRep
 			detail.OldTyrePattern = getPatternName(oldTyre)
 			detail.OldTyreSize = getSizeName(oldTyre)
 			detail.OldTyreStatus = oldTyre.Status
-			if oldTyre.RTD1 != nil {
-				detail.OldTyreTread1 = oldTyre.RTD1
-			}
-			if oldTyre.RTD2 != nil {
-				detail.OldTyreTread2 = oldTyre.RTD2
-			}
+			// d.OldTyreTread1/2 come from user input (OldTyreTread1/2 in request) — do NOT overwrite
 			detail.NewTyreSerialNum = newTyre.SerialNumber
 			detail.NewTyrePattern = getPatternName(newTyre)
 			detail.NewTyreSize = getSizeName(newTyre)
@@ -225,11 +215,7 @@ func (uc *ReplacementUseCase) Create(ctx context.Context, req *request.CreateRep
 			// Mount: update tyre to mounted
 			newTyre, _ := uc.tyreRepo.GetByID(*d.NewTyreID)
 			if newTyre != nil {
-				newTyre.Status = string(entity.TyreStatusMounted)
-				newTyre.UnitID = req.UnitID
-				pos := d.Position
-				newTyre.MountedPosition = &pos
-				uc.tyreRepo.Update(newTyre)
+				uc.tyreRepo.Mount(newTyre.ID, *req.UnitID, d.Position, d.NewTyreTread1, d.NewTyreTread2)
 			}
 		} else if (d.Action == "dismount" || d.Action == "swap") && d.OldTyreID != nil {
 			// Dismount/Swap: update old tyre to spare or scrap
@@ -244,10 +230,7 @@ func (uc *ReplacementUseCase) Create(ctx context.Context, req *request.CreateRep
 						newStatus = string(entity.TyreStatusScrap)
 					}
 				}
-				oldTyre.Status = newStatus
-				oldTyre.UnitID = nil
-				oldTyre.MountedPosition = nil
-				uc.tyreRepo.Update(oldTyre)
+				uc.tyreRepo.Dismount(oldTyre.ID, newStatus, d.OldTyreTread1, d.OldTyreTread2)
 			}
 		}
 
@@ -255,11 +238,7 @@ func (uc *ReplacementUseCase) Create(ctx context.Context, req *request.CreateRep
 		if d.Action == "swap" && d.NewTyreID != nil {
 			newTyre, _ := uc.tyreRepo.GetByID(*d.NewTyreID)
 			if newTyre != nil {
-				newTyre.Status = string(entity.TyreStatusMounted)
-				newTyre.UnitID = req.UnitID
-				pos := d.Position
-				newTyre.MountedPosition = &pos
-				uc.tyreRepo.Update(newTyre)
+				uc.tyreRepo.Mount(newTyre.ID, *req.UnitID, d.Position, d.NewTyreTread1, d.NewTyreTread2)
 			}
 		}
 	}

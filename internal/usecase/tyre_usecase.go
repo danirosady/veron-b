@@ -50,14 +50,14 @@ func NewTyreUseCase(
 }
 
 // List returns a paginated list of tyres.
-func (uc *TyreUseCase) List(ctx context.Context, page, perPage int, companyID uint, status, brandID, sizeID string) ([]*entity.TyreMaster, int64, error) {
+func (uc *TyreUseCase) List(ctx context.Context, page, perPage int, companyID uint, status, brandID, sizeID, search string) ([]*entity.TyreMaster, int64, error) {
 	if page < 1 {
 		page = 1
 	}
 	if perPage < 1 || perPage > 100 {
 		perPage = 20
 	}
-	return uc.tyreRepo.List(page, perPage, companyID, status, brandID, sizeID)
+	return uc.tyreRepo.List(page, perPage, companyID, status, brandID, sizeID, search)
 }
 
 // GetByID returns a tyre by ID.

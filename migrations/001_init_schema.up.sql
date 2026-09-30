@@ -10,7 +10,7 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 -- ============================================================
 CREATE TABLE IF NOT EXISTS companies (
     id              BIGSERIAL PRIMARY KEY,
-    name            VARCHAR(255) NOT NULL,
+    name            VARCHAR(255) NOT NULL UNIQUE,
     address         TEXT NULL,
     contact_person  VARCHAR(255) NULL,
     phone           VARCHAR(50) NULL,
@@ -22,6 +22,9 @@ CREATE TABLE IF NOT EXISTS companies (
 );
 CREATE INDEX IF NOT EXISTS idx_companies_name ON companies(name);
 CREATE INDEX IF NOT EXISTS idx_companies_status ON companies(status);
+
+-- Add unique index for companies ON CONFLICT support (idempotent, skips if already exists)
+CREATE UNIQUE INDEX IF NOT EXISTS uq_companies_name ON companies(name);
 
 -- ============================================================
 -- USERS
@@ -61,6 +64,7 @@ CREATE TABLE IF NOT EXISTS projects (
     updated_at      TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
     CONSTRAINT fk_projects_company FOREIGN KEY (company_id)
         REFERENCES companies(id) ON DELETE RESTRICT,
+    CONSTRAINT uq_projects_company_name UNIQUE (company_id, name),
     CONSTRAINT chk_projects_status CHECK (status IN ('active', 'inactive'))
 );
 CREATE INDEX IF NOT EXISTS idx_projects_company_id ON projects(company_id);
@@ -81,6 +85,7 @@ CREATE TABLE IF NOT EXISTS drivers (
     updated_at      TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
     CONSTRAINT fk_drivers_company FOREIGN KEY (company_id)
         REFERENCES companies(id) ON DELETE RESTRICT,
+    CONSTRAINT uq_drivers_company_employee UNIQUE (company_id, employee_id),
     CONSTRAINT chk_drivers_status CHECK (status IN ('active', 'inactive'))
 );
 CREATE INDEX IF NOT EXISTS idx_drivers_company_id ON drivers(company_id);
@@ -369,7 +374,7 @@ CREATE INDEX IF NOT EXISTS idx_rd_failure_reason_id ON replacement_details(failu
 
 -- Seed master_brands
 INSERT INTO master_brands (name) VALUES
-('TECKHING'),('UNINEST'),('TECHKING'),('HILO'),('BRIDGESTONE'),('ADVANCE'),('VK TYRE'),('TRIANGLE'),('Giti'),('SAKURA')
+('UNINEST'),('TECHKING'),('HILO'),('BRIDGESTONE'),('ADVANCE'),('VK TYRE'),('TRIANGLE'),('Giti'),('SAKURA')
 ON CONFLICT (name) DO NOTHING;
 
 -- Seed master_sizes
@@ -401,19 +406,21 @@ ON CONFLICT (name) DO NOTHING;
 -- UNIT TYPE CONFIGS SEED (final format: poros_1/2/3, Tyre N labels)
 -- ============================================================
 
--- ADT_10POS: 8 positions across 3 axles
+-- WDT_10POS: 10 positions across 3 axles
 INSERT INTO unit_type_configs (unit_type, display_name, max_position, position_config, status) VALUES (
-    'ADT_10POS',
-    'Articulated Dump Truck (8 Pos)',
-    8,
-    '[{"position":"1","label":"Tyre 1","side":"left","axle":"poros_3","x":0.15,"y":0.25,"mirror_of":"2"},
-     {"position":"2","label":"Tyre 2","side":"right","axle":"poros_3","x":0.85,"y":0.25,"mirror_of":"1"},
-     {"position":"3","label":"Tyre 3","side":"left","axle":"poros_4","x":0.25,"y":0.25,"mirror_of":"4"},
-     {"position":"4","label":"Tyre 4","side":"right","axle":"poros_4","x":0.75,"y":0.25,"mirror_of":"3"},
-     {"position":"5","label":"Tyre 5","side":"left","axle":"poros_2","x":0.20,"y":0.55,"mirror_of":"6"},
-     {"position":"6","label":"Tyre 6","side":"right","axle":"poros_2","x":0.80,"y":0.55,"mirror_of":"5"},
-     {"position":"7","label":"Tyre 7","side":"left","axle":"poros_1","x":0.35,"y":0.75,"mirror_of":"8"},
-     {"position":"8","label":"Tyre 8","side":"right","axle":"poros_1","x":0.65,"y":0.75,"mirror_of":"7"}]'::jsonb,
+    'WDT_10POS',
+    'Wide Dump Truck (10 Pos)',
+    10,
+    '[{"position":"1","label":"Tyre 1","side":"left","axle":"poros_1","x":0.255,"y":0.1556,"mirror_of":"2"},
+     {"position":"2","label":"Tyre 2","side":"right","axle":"poros_1","x":0.745,"y":0.1556,"mirror_of":"1"},
+     {"position":"3","label":"Tyre 3","side":"left","axle":"poros_2","x":0.16,"y":0.61,"mirror_of":"6"},
+     {"position":"4","label":"Tyre 4","side":"left","axle":"poros_2","x":0.2804,"y":0.6097,"mirror_of":"5"},
+     {"position":"5","label":"Tyre 5","side":"right","axle":"poros_2","x":0.7196,"y":0.6097,"mirror_of":"4"},
+     {"position":"6","label":"Tyre 6","side":"right","axle":"poros_2","x":0.84,"y":0.61,"mirror_of":"3"},
+     {"position":"7","label":"Tyre 7","side":"left","axle":"poros_3","x":0.16,"y":0.8,"mirror_of":"10"},
+     {"position":"8","label":"Tyre 8","side":"left","axle":"poros_3","x":0.28,"y":0.8,"mirror_of":"9"},
+     {"position":"9","label":"Tyre 9","side":"right","axle":"poros_3","x":0.72,"y":0.8,"mirror_of":"8"},
+     {"position":"10","label":"Tyre 10","side":"right","axle":"poros_3","x":0.84,"y":0.8,"mirror_of":"7"}]'::jsonb,
     'active'
 )
 ON CONFLICT (unit_type) DO NOTHING;
@@ -465,7 +472,6 @@ ON CONFLICT (unit_type) DO NOTHING;
 INSERT INTO master_patterns (brand_id, name)
 SELECT b.id, p.name FROM master_brands b
 CROSS JOIN (VALUES
-    ('TECKHING', 'ET919'),('TECKHING', 'ET919+'),('TECKHING', 'ET668'),
     ('UNINEST', 'TIBERUN 811'),
     ('TECHKING', 'ET919'),('TECHKING', 'ET919+'),('TECHKING', 'VUT'),
     ('HILO', 'B01NL'),
@@ -473,7 +479,8 @@ CROSS JOIN (VALUES
     ('ADVANCE', 'V-LUG'),
     ('VK TYRE', 'XTRA LOAD GRIP'),
     ('TRIANGLE', 'TB 516S'),
-    ('Giti', 'GAO802')
+    ('Giti', 'GAO802'),
+    ('SAKURA', 'SRS-01')
 ) AS p(brand_name, name) WHERE b.name = p.brand_name
 ON CONFLICT ON CONSTRAINT uq_master_patterns_brand_name DO NOTHING;
 
@@ -483,47 +490,95 @@ INSERT INTO users (name, email, password, role, company_id, status) VALUES
 ON CONFLICT (email) DO NOTHING;
 
 -- ============================================================
--- COMPANY DATA SEED
+-- COMPANY DATA SEED (3 companies, 100 tyres total)
 -- ============================================================
 
--- Seed Company
+-- Seed Companies
 INSERT INTO companies (name, address, contact_person, phone, email, status) VALUES
-('Berkat Anuegrah Sejahtera', 'Kutai Kartanegara, Kalimantan Timur', 'Fikri Zufri', '0812-3456-7890', 'company@bas.com', 'active')
-ON CONFLICT DO NOTHING;
+('Berkat Anuegrah Sejahtera', 'Kutai Kartanegara, Kalimantan Timur', 'Fikri Zufri', '0812-3456-7890', 'company@bas.com', 'active'),
+('Borneo Energy Indonesia', 'Samarinda, Kalimantan Timur', 'Ahmad Fauzi', '0813-9876-5432', 'company@bei.com', 'active'),
+('Kalimantan Prima Persada', 'Sangkulirang, Kutai Timur', 'Budi Santoso', '0815-1122-3344', 'company@kpp.com', 'active')
+ON CONFLICT (name) DO NOTHING;
 
--- Seed Project
+-- Seed Projects (2 per company)
 INSERT INTO projects (company_id, name, location, start_date, end_date, status)
-SELECT c.id, 'BSSR', 'Batuah, Kutai Kartanegara', '2024-01-01', '2026-12-31', 'active'
-FROM companies c WHERE c.name = 'Berkat Anuegrah Sejahtera'
-ON CONFLICT DO NOTHING;
+SELECT c.id, p.name, p.location, p.start_date, p.end_date, 'active'
+FROM companies c
+CROSS JOIN (VALUES
+    -- BAS projects
+    ('BSSR', 'Batuah, Kutai Kartanegara', DATE '2024-01-01', DATE '2026-12-31'),
+    ('BSSM', 'Bontang, Kutai Kartanegara', DATE '2025-01-01', DATE '2027-06-30'),
+    -- BEI projects
+    ('EBI', 'Samarinda Utara, Samarinda', DATE '2024-06-01', DATE '2026-12-31'),
+    ('EBS', 'Sengkotek, Samarinda', DATE '2025-03-01', DATE '2027-03-31'),
+    -- KPP projects
+    ('KPP', 'Sangkulirang, Kutai Timur', DATE '2024-09-01', DATE '2027-08-31'),
+    ('KPS', 'Pantai Tanjung Bara, Kutai Timur', DATE '2025-06-01', DATE '2028-05-31')
+) AS p(name, location, start_date, end_date)
+WHERE (c.name = 'Berkat Anuegrah Sejahtera' AND p.name IN ('BSSR','BSSM'))
+   OR (c.name = 'Borneo Energy Indonesia' AND p.name IN ('EBI','EBS'))
+   OR (c.name = 'Kalimantan Prima Persada' AND p.name IN ('KPP','KPS'))
+ON CONFLICT (company_id, name) DO NOTHING;
 
--- Seed Drivers
+-- Seed admin_company users (1 per company, superadmin already exists)
+INSERT INTO users (name, email, password, role, company_id, status) VALUES
+('Admin BAS', 'admin@bas.com', '$2a$10$Em30c27ErDXVIWBY0jopT.IsQTRYS4Kpd.Y792p.i1dVPOIgxootm', 'admin_company', 1, 'active'),
+('Admin BEI', 'admin@bei.com', '$2a$10$Em30c27ErDXVIWBY0jopT.IsQTRYS4Kpd.Y792p.i1dVPOIgxootm', 'admin_company', 2, 'active'),
+('Admin KPP', 'admin@kpp.com', '$2a$10$Em30c27ErDXVIWBY0jopT.IsQTRYS4Kpd.Y792p.i1dVPOIgxootm', 'admin_company', 3, 'active')
+ON CONFLICT (email) DO NOTHING;
+
+-- Seed Drivers (3 per company)
 INSERT INTO drivers (company_id, name, employee_id, phone, license_number, status)
 SELECT c.id, d.name, d.emp_id, d.phone, d.license, 'active'
 FROM companies c
 CROSS JOIN (VALUES
+    -- BAS drivers
     ('Rudi Hartono', 'DRV001', '0813-1111-2222', 'SIM B-1234-KT'),
     ('Surya Darma', 'DRV002', '0813-3333-4444', 'SIM B-5678-KT'),
-    ('Asep Saepulloh', 'DRV003', '0813-5555-6666', 'SIM B-9012-KT')
+    ('Asep Saepulloh', 'DRV003', '0813-5555-6666', 'SIM B-9012-KT'),
+    -- BEI drivers
+    ('Joko Widodo', 'DRV010', '0813-2222-3333', 'SIM B-2234-SM'),
+    ('Dedi Kusuma', 'DRV011', '0813-4444-5555', 'SIM B-6678-SM'),
+    ('Fajar Nugroho', 'DRV012', '0813-6666-7777', 'SIM B-0034-SM'),
+    -- KPP drivers
+    ('Heri Susanto', 'DRV020', '0813-7777-8888', 'SIM B-4456-KT'),
+    ('Agus Salim', 'DRV021', '0813-8888-9999', 'SIM B-7789-KT'),
+    ('Rizki Pratama', 'DRV022', '0813-9999-0000', 'SIM B-0090-KT')
 ) AS d(name, emp_id, phone, license)
-WHERE c.name = 'Berkat Anuegrah Sejahtera'
-ON CONFLICT DO NOTHING;
+WHERE (c.name = 'Berkat Anuegrah Sejahtera' AND d.emp_id IN ('DRV001','DRV002','DRV003'))
+   OR (c.name = 'Borneo Energy Indonesia' AND d.emp_id IN ('DRV010','DRV011','DRV012'))
+   OR (c.name = 'Kalimantan Prima Persada' AND d.emp_id IN ('DRV020','DRV021','DRV022'))
+ON CONFLICT (company_id, employee_id) DO NOTHING;
 
--- Seed Units (3x SANY SKT 105S, ADT_10POS, max_position=8)
+-- Seed Units (3 per company, all SANY WDT_10POS, max_position=10)
 INSERT INTO units (company_id, project_id, unit_id, unit_model, plate_number, tyre_size_default, unit_type, max_position, current_hm, status)
-SELECT c.id, p.id, u.unit_id, u.unit_model, u.plate, u.size, 'ADT_10POS', 8, u.hm, 'active'
+SELECT c.id, p.id, u.unit_id, u.unit_model, u.plate, u.size, 'WDT_10POS', 10, u.hm, 'active'
 FROM companies c
-CROSS JOIN projects p
+JOIN projects p ON p.company_id = c.id
 CROSS JOIN (VALUES
-    ('BWB001', 'SANY SKT 105S', 'KT 1234 AB', '16.00R25', 12850.00),
-    ('BWB002', 'SANY SKT 105S', 'KT 5678 CD', '16.00R25', 11420.50),
-    ('BWB003', 'SANY SKT 105S', 'KT 9012 EF', '16.00R25', 9875.25)
-) AS u(unit_id, unit_model, plate, size, hm)
-WHERE c.name = 'Berkat Anuegrah Sejahtera' AND p.name = 'BSSR'
+    -- BAS units
+    ('BSSR', 'BWB001', 'SANY SKT 105S', 'KT 1234 AB', '16.00R25', 12850.00),
+    ('BSSR', 'BWB002', 'SANY SKT 105S', 'KT 5678 CD', '16.00R25', 11420.50),
+    ('BSSR', 'BWB003', 'SANY SKT 105S', 'KT 9012 EF', '16.00R25', 9875.25),
+    -- BEI units
+    ('EBI', 'BEI001', 'SANY SKT 105S', 'KT 2345 GH', '16.00R25', 15200.00),
+    ('EBI', 'BEI002', 'SANY SKT 105S', 'KT 6789 IJ', '16.00R25', 13850.75),
+    ('EBI', 'BEI003', 'SANY SKT 105S', 'KT 3456 KL', '16.00R25', 11200.00),
+    -- KPP units
+    ('KPP', 'KPP001', 'SANY SKT 105S', 'KT 7890 MN', '16.00R25', 16500.00),
+    ('KPP', 'KPP002', 'SANY SKT 105S', 'KT 0123 OP', '16.00R25', 14100.25),
+    ('KPP', 'KPP003', 'SANY SKT 105S', 'KT 4567 QR', '16.00R25', 10500.50)
+) AS u(proj_name, unit_id, unit_model, plate, size, hm)
+WHERE (c.name = 'Berkat Anuegrah Sejahtera' AND p.name = u.proj_name)
+   OR (c.name = 'Borneo Energy Indonesia' AND p.name = u.proj_name)
+   OR (c.name = 'Kalimantan Prima Persada' AND p.name = u.proj_name)
 ON CONFLICT DO NOTHING;
 
--- Seed Tyres (15 mounted + 5 spare, numeric position key matching position_config)
--- Mounted tyres: join company + unit by unit_code
+-- Seed Tyres: 100 total across 3 companies
+-- BAS: 30 tyres (Unit1=8 mounted, Unit2=4 mounted+4 spare, Unit3=14 spare)
+-- BEI: 35 tyres (Unit1=8 mounted, Unit2=4 mounted+4 spare, Unit3=23 spare)
+-- KPP: 35 tyres (Unit1=8 mounted, Unit2=4 mounted+4 spare, Unit3=23 spare)
+-- Brands used: UNINEST, TECHKING, HILO, BRIDGESTONE, ADVANCE, VK TYRE, TRIANGLE, Giti, SAKURA
 INSERT INTO tyre_master (
     company_id, unit_id, mounted_position,
     barcode, serial_number, dot_code,
@@ -533,64 +588,143 @@ INSERT INTO tyre_master (
 )
 SELECT
     c.id,
-    un.id,
+    CASE WHEN t.unit_code = 'BWB001' THEN (SELECT id FROM units WHERE unit_id='BWB001' AND company_id=c.id LIMIT 1)
+         WHEN t.unit_code = 'BWB002' THEN (SELECT id FROM units WHERE unit_id='BWB002' AND company_id=c.id LIMIT 1)
+         WHEN t.unit_code = 'BWB003' THEN (SELECT id FROM units WHERE unit_id='BWB003' AND company_id=c.id LIMIT 1)
+         WHEN t.unit_code = 'BEI001' THEN (SELECT id FROM units WHERE unit_id='BEI001' AND company_id=c.id LIMIT 1)
+         WHEN t.unit_code = 'BEI002' THEN (SELECT id FROM units WHERE unit_id='BEI002' AND company_id=c.id LIMIT 1)
+         WHEN t.unit_code = 'BEI003' THEN (SELECT id FROM units WHERE unit_id='BEI003' AND company_id=c.id LIMIT 1)
+         WHEN t.unit_code = 'KPP001' THEN (SELECT id FROM units WHERE unit_id='KPP001' AND company_id=c.id LIMIT 1)
+         WHEN t.unit_code = 'KPP002' THEN (SELECT id FROM units WHERE unit_id='KPP002' AND company_id=c.id LIMIT 1)
+         WHEN t.unit_code = 'KPP003' THEN (SELECT id FROM units WHERE unit_id='KPP003' AND company_id=c.id LIMIT 1)
+         ELSE NULL END,
     t.mounted_pos,
     t.barcode, t.serial, t.dot,
     t.tyre_type, sz.id, b.id, pt.id,
     t.otd, t.rtd, t.rtd1, t.rtd2, t.lifetime, t.psi,
     t.status, t.remarks
 FROM companies c
-CROSS JOIN units un
 CROSS JOIN (VALUES
-    ('BWB001','1','TYR00001','SN00001','DOT-2022-001','Radial','16.00R25','TECKHING','ET919',28.5,24.0,23.5,24.5,3250.0,95.0,'mounted','Front left - rear axle 1'),
-    ('BWB001','2','TYR00002','SN00002','DOT-2022-002','Radial','16.00R25','TECHKING','ET919',26.0,22.0,21.0,23.0,4100.5,90.0,'mounted','Front left - rear axle 1'),
-    ('BWB001','3','TYR00003','SN00003','DOT-2022-003','Radial','16.00R25','TECKHING','ET919+',32.0,28.5,29.0,28.0,1800.0,95.0,'mounted','Front left - rear axle 2'),
-    ('BWB001','4','TYR00004','SN00004','DOT-2022-004','Radial','16.00R25','HILO','B01NL',18.0,14.5,13.0,16.0,7200.0,85.0,'mounted','Front right - rear axle 1'),
-    ('BWB001','5','TYR00005','SN00005','DOT-2022-005','Radial','16.00R25','BRIDGESTONE','VUT',15.5,11.0,10.5,11.5,9500.0,80.0,'mounted','Front right - rear axle 2'),
-    ('BWB002','1','TYR00011','SN00011','DOT-2022-011','Radial','16.00R25','TECHKING','ET919',25.0,21.5,20.0,23.0,4350.0,90.0,'mounted','Front left - rear axle 1'),
-    ('BWB002','2','TYR00012','SN00012','DOT-2022-012','Radial','16.00R25','TECKHING','ET919+',30.0,26.0,25.5,26.5,2100.0,95.0,'mounted','Front left - rear axle 1'),
-    ('BWB002','3','TYR00013','SN00013','DOT-2022-013','Radial','16.00R25','TRIANGLE','TB 516S',22.0,18.0,17.0,19.0,5800.0,88.0,'mounted','Front left - rear axle 2'),
-    ('BWB002','4','TYR00014','SN00014','DOT-2022-014','Radial','16.00R25','HILO','B01NL',17.5,13.5,12.0,15.0,8100.0,85.0,'mounted','Front right - rear axle 1'),
-    ('BWB002','5','TYR00015','SN00015','DOT-2022-015','Radial','16.00R25','Giti','GAO802',20.0,16.5,15.0,18.0,6500.0,88.0,'mounted','Front right - rear axle 2'),
-    ('BWB003','1','TYR00016','SN00016','DOT-2022-016','Radial','16.00R25','TECKHING','ET919',27.5,23.0,22.5,23.5,3800.0,95.0,'mounted','Front left - rear axle 1'),
-    ('BWB003','2','TYR00017','SN00017','DOT-2022-017','Radial','16.00R25','TECKHING','ET919+',33.0,29.5,30.0,29.0,1500.0,95.0,'mounted','Front left - rear axle 1'),
-    ('BWB003','3','TYR00018','SN00018','DOT-2022-018','Radial','16.00R25','BRIDGESTONE','VUT',19.0,15.0,14.0,16.0,7500.0,82.0,'mounted','Front left - rear axle 2'),
-    ('BWB003','4','TYR00019','SN00019','DOT-2022-019','Radial','16.00R25','TECHKING','VUT',16.0,12.0,11.0,13.0,9200.0,80.0,'mounted','Front right - rear axle 1'),
-    ('BWB003','5','TYR00020','SN00020','DOT-2022-020','Radial','16.00R25','UNINEST','TIBERUN 811',24.0,20.0,19.0,21.0,5100.0,90.0,'mounted','Front right - rear axle 2')
+    -- ========== BAS TYRES (30 total) ==========
+    -- Unit 1 (BWB001): 8 mounted tyres - all positions
+    ('BWB001','1','TYR00001','SN00001','DOT-2022-001','Radial','16.00R25','UNINEST','TIBERUN 811',30.0,26.0,25.5,26.5,1500.0,95.0,'mounted','Unit 1 - Pos 1'),
+    ('BWB001','2','TYR00002','SN00002','DOT-2022-002','Radial','16.00R25','TECHKING','ET919',28.5,24.0,23.5,24.5,2200.0,90.0,'mounted','Unit 1 - Pos 2'),
+    ('BWB001','3','TYR00003','SN00003','DOT-2022-003','Radial','16.00R25','HILO','B01NL',32.0,28.5,29.0,28.0,950.0,95.0,'mounted','Unit 1 - Pos 3'),
+    ('BWB001','4','TYR00004','SN00004','DOT-2022-004','Radial','16.00R25','BRIDGESTONE','VUT',18.0,14.5,13.0,16.0,6800.0,85.0,'mounted','Unit 1 - Pos 4'),
+    ('BWB001','5','TYR00005','SN00005','DOT-2022-005','Radial','16.00R25','ADVANCE','V-LUG',15.5,11.0,10.5,11.5,9100.0,80.0,'mounted','Unit 1 - Pos 5'),
+    ('BWB001','6','TYR00006','SN00006','DOT-2022-006','Radial','16.00R25','VK TYRE','XTRA LOAD GRIP',20.0,16.0,15.5,16.5,5200.0,88.0,'mounted','Unit 1 - Pos 6'),
+    ('BWB001','7','TYR00007','SN00007','DOT-2022-007','Radial','16.00R25','TRIANGLE','TB 516S',25.0,21.0,20.5,21.5,3000.0,92.0,'mounted','Unit 1 - Pos 7'),
+    ('BWB001','8','TYR00008','SN00008','DOT-2022-008','Radial','16.00R25','Giti','GAO802',22.0,18.5,17.5,19.5,4500.0,90.0,'mounted','Unit 1 - Pos 8'),
+    -- Unit 2 (BWB002): 4 mounted + 4 spare - positions 1-4 mounted, 5-8 spare
+    ('BWB002','1','TYR00011','SN00011','DOT-2022-011','Radial','16.00R25','TECHKING','ET919+',27.0,23.0,22.0,24.0,2800.0,90.0,'mounted','Unit 2 - Pos 1'),
+    ('BWB002','2','TYR00012','SN00012','DOT-2022-012','Radial','16.00R25','UNINEST','TIBERUN 811',29.0,25.0,24.5,25.5,1800.0,95.0,'mounted','Unit 2 - Pos 2'),
+    ('BWB002','3','TYR00013','SN00013','DOT-2022-013','Radial','16.00R25','HILO','B01NL',21.0,17.0,16.0,18.0,5800.0,86.0,'mounted','Unit 2 - Pos 3'),
+    ('BWB002','4','TYR00014','SN00014','DOT-2022-014','Radial','16.00R25','BRIDGESTONE','VUT',16.0,12.0,11.5,12.5,8200.0,82.0,'mounted','Unit 2 - Pos 4'),
+    -- Unit 2 spares (no unit_id)
+    ('BWB002','Spare','TYR00015','SN00015','DOT-2022-015','Radial','16.00R25','SAKURA','SRS-01',38.0,35.0,34.5,35.5,300.0,98.0,'spare','Unit 2 Spare - Pos 5'),
+    ('BWB002','Spare','TYR00016','SN00016','DOT-2022-016','Radial','16.00R25','TECHKING','VUT',40.0,38.0,37.5,38.5,100.0,100.0,'spare','Unit 2 Spare - Pos 6'),
+    ('BWB002','Spare','TYR00017','SN00017','DOT-2022-017','Radial','16.00R25','Giti','GAO802',36.0,33.0,32.5,33.5,600.0,96.0,'spare','Unit 2 Spare - Pos 7'),
+    ('BWB002','Spare','TYR00018','SN00018','DOT-2022-018','Radial','16.00R25','ADVANCE','V-LUG',37.0,34.0,33.5,34.5,450.0,97.0,'spare','Unit 2 Spare - Pos 8'),
+    -- Unit 3 (BWB003): all 14 spare
+    ('BWB003','Spare','TYR00021','SN00021','DOT-2022-021','Radial','16.00R25','UNINEST','TIBERUN 811',42.0,40.0,39.5,40.5,0.0,100.0,'spare','Unit 3 Spare - 1'),
+    ('BWB003','Spare','TYR00022','SN00022','DOT-2022-022','Radial','16.00R25','TECHKING','ET919',41.0,39.0,38.5,39.5,100.0,100.0,'spare','Unit 3 Spare - 2'),
+    ('BWB003','Spare','TYR00023','SN00023','DOT-2022-023','Radial','16.00R25','HILO','B01NL',39.0,37.0,36.5,37.5,200.0,98.0,'spare','Unit 3 Spare - 3'),
+    ('BWB003','Spare','TYR00024','SN00024','DOT-2022-024','Radial','16.00R25','BRIDGESTONE','VUT',38.0,36.0,35.5,36.5,350.0,97.0,'spare','Unit 3 Spare - 4'),
+    ('BWB003','Spare','TYR00025','SN00025','DOT-2022-025','Radial','16.00R25','VK TYRE','XTRA LOAD GRIP',40.0,38.0,37.5,38.5,150.0,100.0,'spare','Unit 3 Spare - 5'),
+    ('BWB003','Spare','TYR00026','SN00026','DOT-2022-026','Radial','16.00R25','SAKURA','SRS-01',37.0,35.0,34.5,35.5,400.0,96.0,'spare','Unit 3 Spare - 6'),
+    ('BWB003','Spare','TYR00027','SN00027','DOT-2022-027','Radial','16.00R25','Giti','GAO802',39.0,37.0,36.5,37.5,250.0,98.0,'spare','Unit 3 Spare - 7'),
+    ('BWB003','Spare','TYR00028','SN00028','DOT-2022-028','Radial','16.00R25','TRIANGLE','TB 516S',41.0,39.0,38.5,39.5,80.0,100.0,'spare','Unit 3 Spare - 8'),
+    ('BWB003','Spare','TYR00029','SN00029','DOT-2022-029','Radial','16.00R25','ADVANCE','V-LUG',35.0,33.0,32.5,33.5,600.0,95.0,'spare','Unit 3 Spare - 9'),
+    ('BWB003','Spare','TYR00030','SN00030','DOT-2022-030','Radial','16.00R25','TECHKING','ET919+',36.0,34.0,33.5,34.5,500.0,96.0,'spare','Unit 3 Spare - 10'),
+    ('BWB003','Spare','TYR00031','SN00031','DOT-2022-031','Radial','16.00R25','UNINEST','TIBERUN 811',38.0,36.0,35.5,36.5,350.0,97.0,'spare','Unit 3 Spare - 11'),
+    ('BWB003','Spare','TYR00032','SN00032','DOT-2022-032','Radial','16.00R25','HILO','B01NL',34.0,32.0,31.5,32.5,800.0,94.0,'spare','Unit 3 Spare - 12'),
+    ('BWB003','Spare','TYR00033','SN00033','DOT-2022-033','Radial','16.00R25','BRIDGESTONE','VUT',33.0,31.0,30.5,31.5,900.0,93.0,'spare','Unit 3 Spare - 13'),
+    ('BWB003','Spare','TYR00034','SN00034','DOT-2022-034','Radial','16.00R25','SAKURA','SRS-01',35.0,33.0,32.5,33.5,700.0,95.0,'spare','Unit 3 Spare - 14'),
+
+    -- ========== BEI TYRES (35 total) ==========
+    -- Unit 1 (BEI001): 8 mounted
+    ('BEI001','1','TYR00051','SN00051','DOT-2023-001','Radial','16.00R25','TECHKING','ET919',29.0,25.0,24.5,25.5,1700.0,95.0,'mounted','Unit 1 - Pos 1'),
+    ('BEI001','2','TYR00052','SN00052','DOT-2023-002','Radial','16.00R25','UNINEST','TIBERUN 811',27.0,23.0,22.0,24.0,2500.0,90.0,'mounted','Unit 1 - Pos 2'),
+    ('BEI001','3','TYR00053','SN00053','DOT-2023-003','Radial','16.00R25','HILO','B01NL',31.0,27.5,27.0,28.0,1200.0,95.0,'mounted','Unit 1 - Pos 3'),
+    ('BEI001','4','TYR00054','SN00054','DOT-2023-004','Radial','16.00R25','BRIDGESTONE','VUT',17.0,13.5,12.5,14.5,7200.0,84.0,'mounted','Unit 1 - Pos 4'),
+    ('BEI001','5','TYR00055','SN00055','DOT-2023-005','Radial','16.00R25','ADVANCE','V-LUG',14.0,10.0,9.5,10.5,9800.0,78.0,'mounted','Unit 1 - Pos 5'),
+    ('BEI001','6','TYR00056','SN00056','DOT-2023-006','Radial','16.00R25','VK TYRE','XTRA LOAD GRIP',21.0,17.0,16.5,17.5,4800.0,88.0,'mounted','Unit 1 - Pos 6'),
+    ('BEI001','7','TYR00057','SN00057','DOT-2023-007','Radial','16.00R25','TRIANGLE','TB 516S',26.0,22.0,21.0,23.0,3100.0,92.0,'mounted','Unit 1 - Pos 7'),
+    ('BEI001','8','TYR00058','SN00058','DOT-2023-008','Radial','16.00R25','Giti','GAO802',23.0,19.0,18.5,19.5,4100.0,90.0,'mounted','Unit 1 - Pos 8'),
+    -- Unit 2 (BEI002): 4 mounted + 4 spare
+    ('BEI002','1','TYR00061','SN00061','DOT-2023-011','Radial','16.00R25','TECHKING','ET919+',28.0,24.0,23.5,24.5,2400.0,90.0,'mounted','Unit 2 - Pos 1'),
+    ('BEI002','2','TYR00062','SN00062','DOT-2023-012','Radial','16.00R25','UNINEST','TIBERUN 811',30.0,26.0,25.5,26.5,1500.0,95.0,'mounted','Unit 2 - Pos 2'),
+    ('BEI002','3','TYR00063','SN00063','DOT-2023-013','Radial','16.00R25','HILO','B01NL',22.0,18.0,17.0,19.0,5400.0,86.0,'mounted','Unit 2 - Pos 3'),
+    ('BEI002','4','TYR00064','SN00064','DOT-2023-014','Radial','16.00R25','BRIDGESTONE','VUT',15.0,11.0,10.5,11.5,8600.0,80.0,'mounted','Unit 2 - Pos 4'),
+    ('BEI002','Spare','TYR00065','SN00065','DOT-2023-015','Radial','16.00R25','SAKURA','SRS-01',39.0,37.0,36.5,37.5,200.0,98.0,'spare','Unit 2 Spare - 5'),
+    ('BEI002','Spare','TYR00066','SN00066','DOT-2023-016','Radial','16.00R25','TECHKING','VUT',41.0,39.0,38.5,39.5,50.0,100.0,'spare','Unit 2 Spare - 6'),
+    ('BEI002','Spare','TYR00067','SN00067','DOT-2023-017','Radial','16.00R25','Giti','GAO802',38.0,36.0,35.5,36.5,400.0,97.0,'spare','Unit 2 Spare - 7'),
+    ('BEI002','Spare','TYR00068','SN00068','DOT-2023-018','Radial','16.00R25','ADVANCE','V-LUG',37.0,35.0,34.5,35.5,550.0,96.0,'spare','Unit 2 Spare - 8'),
+    -- Unit 3 (BEI003): 19 spare
+    ('BEI003','Spare','TYR00071','SN00071','DOT-2023-021','Radial','16.00R25','UNINEST','TIBERUN 811',43.0,41.0,40.5,41.5,0.0,100.0,'spare','Unit 3 Spare - 1'),
+    ('BEI003','Spare','TYR00072','SN00072','DOT-2023-022','Radial','16.00R25','TECHKING','ET919',42.0,40.0,39.5,40.5,80.0,100.0,'spare','Unit 3 Spare - 2'),
+    ('BEI003','Spare','TYR00073','SN00073','DOT-2023-023','Radial','16.00R25','HILO','B01NL',40.0,38.0,37.5,38.5,150.0,98.0,'spare','Unit 3 Spare - 3'),
+    ('BEI003','Spare','TYR00074','SN00074','DOT-2023-024','Radial','16.00R25','BRIDGESTONE','VUT',39.0,37.0,36.5,37.5,250.0,97.0,'spare','Unit 3 Spare - 4'),
+    ('BEI003','Spare','TYR00075','SN00075','DOT-2023-025','Radial','16.00R25','VK TYRE','XTRA LOAD GRIP',41.0,39.0,38.5,39.5,100.0,100.0,'spare','Unit 3 Spare - 5'),
+    ('BEI003','Spare','TYR00076','SN00076','DOT-2023-026','Radial','16.00R25','SAKURA','SRS-01',38.0,36.0,35.5,36.5,350.0,96.0,'spare','Unit 3 Spare - 6'),
+    ('BEI003','Spare','TYR00077','SN00077','DOT-2023-027','Radial','16.00R25','Giti','GAO802',40.0,38.0,37.5,38.5,180.0,98.0,'spare','Unit 3 Spare - 7'),
+    ('BEI003','Spare','TYR00078','SN00078','DOT-2023-028','Radial','16.00R25','TRIANGLE','TB 516S',42.0,40.0,39.5,40.5,60.0,100.0,'spare','Unit 3 Spare - 8'),
+    ('BEI003','Spare','TYR00079','SN00079','DOT-2023-029','Radial','16.00R25','ADVANCE','V-LUG',36.0,34.0,33.5,34.5,500.0,95.0,'spare','Unit 3 Spare - 9'),
+    ('BEI003','Spare','TYR00080','SN00080','DOT-2023-030','Radial','16.00R25','TECHKING','ET919+',37.0,35.0,34.5,35.5,400.0,96.0,'spare','Unit 3 Spare - 10'),
+    ('BEI003','Spare','TYR00081','SN00081','DOT-2023-031','Radial','16.00R25','UNINEST','TIBERUN 811',39.0,37.0,36.5,37.5,300.0,97.0,'spare','Unit 3 Spare - 11'),
+    ('BEI003','Spare','TYR00082','SN00082','DOT-2023-032','Radial','16.00R25','HILO','B01NL',35.0,33.0,32.5,33.5,700.0,94.0,'spare','Unit 3 Spare - 12'),
+    ('BEI003','Spare','TYR00083','SN00083','DOT-2023-033','Radial','16.00R25','BRIDGESTONE','VUT',34.0,32.0,31.5,32.5,850.0,93.0,'spare','Unit 3 Spare - 13'),
+    ('BEI003','Spare','TYR00084','SN00084','DOT-2023-034','Radial','16.00R25','SAKURA','SRS-01',36.0,34.0,33.5,34.5,600.0,95.0,'spare','Unit 3 Spare - 14'),
+    ('BEI003','Spare','TYR00085','SN00085','DOT-2023-035','Radial','16.00R25','Giti','GAO802',38.0,36.0,35.5,36.5,450.0,97.0,'spare','Unit 3 Spare - 15'),
+    ('BEI003','Spare','TYR00086','SN00086','DOT-2023-036','Radial','16.00R25','TECHKING','VUT',37.0,35.0,34.5,35.5,550.0,96.0,'spare','Unit 3 Spare - 16'),
+    ('BEI003','Spare','TYR00087','SN00087','DOT-2023-037','Radial','16.00R25','ADVANCE','V-LUG',33.0,31.0,30.5,31.5,950.0,92.0,'spare','Unit 3 Spare - 17'),
+    ('BEI003','Spare','TYR00088','SN00088','DOT-2023-038','Radial','16.00R25','TRIANGLE','TB 516S',35.0,33.0,32.5,33.5,750.0,95.0,'spare','Unit 3 Spare - 18'),
+    ('BEI003','Spare','TYR00089','SN00089','DOT-2023-039','Radial','16.00R25','UNINEST','TIBERUN 811',40.0,38.0,37.5,38.5,200.0,98.0,'spare','Unit 3 Spare - 19'),
+
+    -- ========== KPP TYRES (35 total) ==========
+    -- Unit 1 (KPP001): 8 mounted
+    ('KPP001','1','TYR00101','SN00101','DOT-2024-001','Radial','16.00R25','TECHKING','ET919',30.0,26.0,25.5,26.5,1300.0,95.0,'mounted','Unit 1 - Pos 1'),
+    ('KPP001','2','TYR00102','SN00102','DOT-2024-002','Radial','16.00R25','UNINEST','TIBERUN 811',28.0,24.0,23.0,25.0,2100.0,90.0,'mounted','Unit 1 - Pos 2'),
+    ('KPP001','3','TYR00103','SN00103','DOT-2024-003','Radial','16.00R25','HILO','B01NL',32.0,28.5,28.0,29.0,800.0,95.0,'mounted','Unit 1 - Pos 3'),
+    ('KPP001','4','TYR00104','SN00104','DOT-2024-004','Radial','16.00R25','BRIDGESTONE','VUT',19.0,15.5,14.5,16.5,6200.0,85.0,'mounted','Unit 1 - Pos 4'),
+    ('KPP001','5','TYR00105','SN00105','DOT-2024-005','Radial','16.00R25','ADVANCE','V-LUG',16.0,12.0,11.5,12.5,8700.0,80.0,'mounted','Unit 1 - Pos 5'),
+    ('KPP001','6','TYR00106','SN00106','DOT-2024-006','Radial','16.00R25','VK TYRE','XTRA LOAD GRIP',22.0,18.0,17.5,18.5,4500.0,88.0,'mounted','Unit 1 - Pos 6'),
+    ('KPP001','7','TYR00107','SN00107','DOT-2024-007','Radial','16.00R25','TRIANGLE','TB 516S',27.0,23.0,22.0,24.0,2800.0,92.0,'mounted','Unit 1 - Pos 7'),
+    ('KPP001','8','TYR00108','SN00108','DOT-2024-008','Radial','16.00R25','Giti','GAO802',24.0,20.0,19.5,20.5,3800.0,90.0,'mounted','Unit 1 - Pos 8'),
+    -- Unit 2 (KPP002): 4 mounted + 4 spare
+    ('KPP002','1','TYR00111','SN00111','DOT-2024-011','Radial','16.00R25','TECHKING','ET919+',29.0,25.0,24.5,25.5,2000.0,90.0,'mounted','Unit 2 - Pos 1'),
+    ('KPP002','2','TYR00112','SN00112','DOT-2024-012','Radial','16.00R25','UNINEST','TIBERUN 811',31.0,27.0,26.5,27.5,1200.0,95.0,'mounted','Unit 2 - Pos 2'),
+    ('KPP002','3','TYR00113','SN00113','DOT-2024-013','Radial','16.00R25','HILO','B01NL',23.0,19.0,18.0,20.0,5100.0,86.0,'mounted','Unit 2 - Pos 3'),
+    ('KPP002','4','TYR00114','SN00114','DOT-2024-014','Radial','16.00R25','BRIDGESTONE','VUT',17.0,13.0,12.5,13.5,7900.0,82.0,'mounted','Unit 2 - Pos 4'),
+    ('KPP002','Spare','TYR00115','SN00115','DOT-2024-015','Radial','16.00R25','SAKURA','SRS-01',40.0,38.0,37.5,38.5,150.0,98.0,'spare','Unit 2 Spare - 5'),
+    ('KPP002','Spare','TYR00116','SN00116','DOT-2024-016','Radial','16.00R25','TECHKING','VUT',42.0,40.0,39.5,40.5,30.0,100.0,'spare','Unit 2 Spare - 6'),
+    ('KPP002','Spare','TYR00117','SN00117','DOT-2024-017','Radial','16.00R25','Giti','GAO802',39.0,37.0,36.5,37.5,350.0,97.0,'spare','Unit 2 Spare - 7'),
+    ('KPP002','Spare','TYR00118','SN00118','DOT-2024-018','Radial','16.00R25','ADVANCE','V-LUG',38.0,36.0,35.5,36.5,500.0,96.0,'spare','Unit 2 Spare - 8'),
+    -- Unit 3 (KPP003): 19 spare
+    ('KPP003','Spare','TYR00121','SN00121','DOT-2024-021','Radial','16.00R25','UNINEST','TIBERUN 811',44.0,42.0,41.5,42.5,0.0,100.0,'spare','Unit 3 Spare - 1'),
+    ('KPP003','Spare','TYR00122','SN00122','DOT-2024-022','Radial','16.00R25','TECHKING','ET919',43.0,41.0,40.5,41.5,50.0,100.0,'spare','Unit 3 Spare - 2'),
+    ('KPP003','Spare','TYR00123','SN00123','DOT-2024-023','Radial','16.00R25','HILO','B01NL',41.0,39.0,38.5,39.5,120.0,98.0,'spare','Unit 3 Spare - 3'),
+    ('KPP003','Spare','TYR00124','SN00124','DOT-2024-024','Radial','16.00R25','BRIDGESTONE','VUT',40.0,38.0,37.5,38.5,220.0,97.0,'spare','Unit 3 Spare - 4'),
+    ('KPP003','Spare','TYR00125','SN00125','DOT-2024-025','Radial','16.00R25','VK TYRE','XTRA LOAD GRIP',42.0,40.0,39.5,40.5,80.0,100.0,'spare','Unit 3 Spare - 5'),
+    ('KPP003','Spare','TYR00126','SN00126','DOT-2024-026','Radial','16.00R25','SAKURA','SRS-01',39.0,37.0,36.5,37.5,320.0,96.0,'spare','Unit 3 Spare - 6'),
+    ('KPP003','Spare','TYR00127','SN00127','DOT-2024-027','Radial','16.00R25','Giti','GAO802',41.0,39.0,38.5,39.5,150.0,98.0,'spare','Unit 3 Spare - 7'),
+    ('KPP003','Spare','TYR00128','SN00128','DOT-2024-028','Radial','16.00R25','TRIANGLE','TB 516S',43.0,41.0,40.5,41.5,40.0,100.0,'spare','Unit 3 Spare - 8'),
+    ('KPP003','Spare','TYR00129','SN00129','DOT-2024-029','Radial','16.00R25','ADVANCE','V-LUG',37.0,35.0,34.5,35.5,480.0,95.0,'spare','Unit 3 Spare - 9'),
+    ('KPP003','Spare','TYR00130','SN00130','DOT-2024-030','Radial','16.00R25','TECHKING','ET919+',38.0,36.0,35.5,36.5,380.0,96.0,'spare','Unit 3 Spare - 10'),
+    ('KPP003','Spare','TYR00131','SN00131','DOT-2024-031','Radial','16.00R25','UNINEST','TIBERUN 811',40.0,38.0,37.5,38.5,280.0,97.0,'spare','Unit 3 Spare - 11'),
+    ('KPP003','Spare','TYR00132','SN00132','DOT-2024-032','Radial','16.00R25','HILO','B01NL',36.0,34.0,33.5,34.5,680.0,94.0,'spare','Unit 3 Spare - 12'),
+    ('KPP003','Spare','TYR00133','SN00133','DOT-2024-033','Radial','16.00R25','BRIDGESTONE','VUT',35.0,33.0,32.5,33.5,820.0,93.0,'spare','Unit 3 Spare - 13'),
+    ('KPP003','Spare','TYR00134','SN00134','DOT-2024-034','Radial','16.00R25','SAKURA','SRS-01',37.0,35.0,34.5,35.5,580.0,95.0,'spare','Unit 3 Spare - 14'),
+    ('KPP003','Spare','TYR00135','SN00135','DOT-2024-035','Radial','16.00R25','Giti','GAO802',39.0,37.0,36.5,37.5,420.0,97.0,'spare','Unit 3 Spare - 15'),
+    ('KPP003','Spare','TYR00136','SN00136','DOT-2024-036','Radial','16.00R25','TECHKING','VUT',38.0,36.0,35.5,36.5,530.0,96.0,'spare','Unit 3 Spare - 16'),
+    ('KPP003','Spare','TYR00137','SN00137','DOT-2024-037','Radial','16.00R25','ADVANCE','V-LUG',34.0,32.0,31.5,32.5,920.0,92.0,'spare','Unit 3 Spare - 17'),
+    ('KPP003','Spare','TYR00138','SN00138','DOT-2024-038','Radial','16.00R25','TRIANGLE','TB 516S',36.0,34.0,33.5,34.5,720.0,95.0,'spare','Unit 3 Spare - 18'),
+    ('KPP003','Spare','TYR00139','SN00139','DOT-2024-039','Radial','16.00R25','UNINEST','TIBERUN 811',41.0,39.0,38.5,39.5,180.0,98.0,'spare','Unit 3 Spare - 19')
 ) AS t(unit_code,mounted_pos,barcode,serial,dot,tyre_type,size_name,brand_name,pattern_name,otd,rtd,rtd1,rtd2,lifetime,psi,status,remarks)
 LEFT JOIN master_sizes sz ON sz.name = t.size_name
 LEFT JOIN master_brands b ON b.name = t.brand_name
 LEFT JOIN master_patterns pt ON pt.name = t.pattern_name AND pt.brand_id = b.id
-WHERE c.name = 'Berkat Anuegrah Sejahtera'
-  AND un.unit_id = t.unit_code
-ON CONFLICT DO NOTHING;
-
--- Spare tyres: no unit_id
-INSERT INTO tyre_master (
-    company_id, unit_id, mounted_position,
-    barcode, serial_number, dot_code,
-    type, size_id, brand_id, pattern_id,
-    otd, rtd, rtd1, rtd2, lifetime, psi,
-    status, remarks
-)
-SELECT
-    c.id,
-    NULL,
-    t.mounted_pos,
-    t.barcode, t.serial, t.dot,
-    t.tyre_type, sz.id, b.id, pt.id,
-    t.otd, t.rtd, t.rtd1, t.rtd2, t.lifetime, t.psi,
-    t.status, t.remarks
-FROM companies c
-CROSS JOIN (VALUES
-    ('Spare','TYR00006','SN00006','DOT-2022-006','Radial','16.00R25','TECKHING','ET668',38.0,36.0,36.5,35.5,500.0,98.0,'spare','New tyre - ready to mount'),
-    ('Spare','TYR00007','SN00007','DOT-2022-007','Radial','16.00R25','UNINEST','TIBERUN 811',40.0,38.5,39.0,38.0,0.0,100.0,'spare','New tyre - ready to mount'),
-    ('Spare','TYR00008','SN00008','DOT-2022-008','Radial','16.00R25','TECHKING','ET919+',39.0,37.5,38.0,37.0,200.0,98.0,'spare','New tyre - ready to mount'),
-    ('Spare','TYR00009','SN00009','DOT-2022-009','Radial','16.00R25','TECKHING','ET919',35.0,33.0,32.5,33.5,850.0,95.0,'spare','Running low - monitor closely'),
-    ('Spare','TYR00010','SN00010','DOT-2022-010','Radial','16.00R25','ADVANCE','V-LUG',30.0,27.0,26.5,27.5,1200.0,92.0,'spare','Ex repair - still usable')
-) AS t(mounted_pos,barcode,serial,dot,tyre_type,size_name,brand_name,pattern_name,otd,rtd,rtd1,rtd2,lifetime,psi,status,remarks)
-LEFT JOIN master_sizes sz ON sz.name = t.size_name
-LEFT JOIN master_brands b ON b.name = t.brand_name
-LEFT JOIN master_patterns pt ON pt.name = t.pattern_name AND pt.brand_id = b.id
-WHERE c.name = 'Berkat Anuegrah Sejahtera'
+WHERE (c.name = 'Berkat Anuegrah Sejahtera' AND t.unit_code IN ('BWB001','BWB002','BWB003'))
+   OR (c.name = 'Borneo Energy Indonesia' AND t.unit_code IN ('BEI001','BEI002','BEI003'))
+   OR (c.name = 'Kalimantan Prima Persada' AND t.unit_code IN ('KPP001','KPP002','KPP003'))
 ON CONFLICT DO NOTHING;

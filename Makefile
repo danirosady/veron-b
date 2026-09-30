@@ -28,9 +28,8 @@ migrate-down:
 
 # Fresh reset: mark all migrations as not applied + drop all tables
 migrate-reset:
-	@echo "Resetting database..."
 	@$(PSQL) -c "TRUNCATE schema_migrations RESTART IDENTITY CASCADE;" 2>/dev/null || true
-	@$(PSQL) -c "DO $$ DECLARE r RECORD; BEGIN FOR r IN (SELECT tablename FROM pg_tables WHERE schemaname = 'public') LOOP EXECUTE 'DROP TABLE IF EXISTS ' || quote_ident(r.tablename) || ' CASCADE'; END LOOP; END $$;" 2>/dev/null || true
+	@$(PSQL) -c 'DO $dopla$ DECLARE r RECORD; BEGIN FOR r IN (SELECT tablename FROM pg_tables WHERE schemaname = '\''public'\'') LOOP EXECUTE '\''DROP TABLE IF EXISTS '\'' || quote_ident(r.tablename) || '\'' CASCADE'\''; END LOOP; END $dopla$;' 2>/dev/null || true
 	@echo "Database cleared. Run 'make migrate-up' to re-apply."
 
 # Show migration status

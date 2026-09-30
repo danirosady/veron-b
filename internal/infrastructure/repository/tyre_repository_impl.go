@@ -182,7 +182,7 @@ func (r *tyreRepository) Delete(id uint) error {
 	return r.db.Delete(&entity.TyreMaster{}, id).Error
 }
 
-func (r *tyreRepository) List(page, perPage int, companyID uint, status, brandID, sizeID string) ([]*entity.TyreMaster, int64, error) {
+func (r *tyreRepository) List(page, perPage int, companyID uint, status, brandID, sizeID, search string) ([]*entity.TyreMaster, int64, error) {
 	var total int64
 
 	db := r.db.Model(&entity.TyreMaster{})
@@ -201,6 +201,9 @@ func (r *tyreRepository) List(page, perPage int, companyID uint, status, brandID
 		if n, err := strconv.ParseUint(sizeID, 10, 64); err == nil {
 			db = db.Where("size_id = ?", n)
 		}
+	}
+	if search != "" {
+		db = db.Where("barcode LIKE ? OR serial_number LIKE ?", "%"+search+"%", "%"+search+"%")
 	}
 
 	if err := db.Count(&total).Error; err != nil {
@@ -251,6 +254,13 @@ func (r *tyreRepository) List(page, perPage int, companyID uint, status, brandID
 			where += " t.size_id = ?"
 			args = append(args, n)
 		}
+	}
+	if search != "" {
+		if where != "" {
+			where += " AND"
+		}
+		where += " (t.barcode LIKE ? OR t.serial_number LIKE ?)"
+		args = append(args, "%"+search+"%", "%"+search+"%")
 	}
 	if where != "" {
 		query += " WHERE" + where
@@ -320,24 +330,40 @@ func (r *tyreRepository) GetSpareTyres(companyID uint) ([]*entity.TyreMaster, er
 	return tyres, err
 }
 
-func (r *tyreRepository) Mount(tyreID uint, unitID uint, position string) error {
+func (r *tyreRepository) Mount(tyreID uint, unitID uint, position string, rtd1, rtd2 *float64) error {
+	updates := map[string]interface{}{
+		"unit_id":           unitID,
+		"mounted_position":  position,
+		"status":            "mounted",
+	}
+	if rtd1 != nil {
+		updates["rtd1"] = rtd1
+		updates["rtd"] = *rtd1
+	}
+	if rtd2 != nil {
+		updates["rtd2"] = rtd2
+	}
 	return r.db.Model(&entity.TyreMaster{}).
 		Where("id = ?", tyreID).
-		Updates(map[string]interface{}{
-			"unit_id":           unitID,
-			"mounted_position":  position,
-			"status":            "mounted",
-		}).Error
+		Updates(updates).Error
 }
 
-func (r *tyreRepository) Dismount(tyreID uint, status string) error {
+func (r *tyreRepository) Dismount(tyreID uint, status string, rtd1, rtd2 *float64) error {
+	updates := map[string]interface{}{
+		"unit_id":           nil,
+		"mounted_position":  nil,
+		"status":            status,
+	}
+	if rtd1 != nil {
+		updates["rtd1"] = rtd1
+		updates["rtd"] = *rtd1
+	}
+	if rtd2 != nil {
+		updates["rtd2"] = rtd2
+	}
 	return r.db.Model(&entity.TyreMaster{}).
 		Where("id = ?", tyreID).
-		Updates(map[string]interface{}{
-			"unit_id":           nil,
-			"mounted_position":  nil,
-			"status":            status,
-		}).Error
+		Updates(updates).Error
 }
 
 func (r *tyreRepository) GetTyreHistory(tyreID uint) ([]*entity.TyreHistoryItem, error) {
