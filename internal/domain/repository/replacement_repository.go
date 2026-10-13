@@ -13,4 +13,6 @@ type ReplacementRepository interface {
 	GetByID(id uint) (*entity.Replacement, error)
 	List(page, perPage int, companyID, projectID, unitID uint, dateFrom, dateTo *time.Time) ([]*entity.Replacement, int64, error)
 	GetLastReplacementByUnitID(unitID uint) (*entity.Replacement, error)
+	GetLastMountByTyreID(tyreID uint) (*entity.ReplacementDetail, error)
+	UpdateDetailOldTyreLifetime(detailID uint, oldTyreLifetime float64) error
 }

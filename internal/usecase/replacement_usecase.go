@@ -90,6 +90,13 @@ func (uc *ReplacementUseCase) Create(ctx context.Context, req *request.CreateRep
 			NewTyreTread2: d.NewTyreTread2,
 			NewTyreStatus: d.NewTyreStatus,
 			Remark:       d.Remark,
+			Location:     d.Location,
+			HMReading:   d.HMReading,
+		}
+
+		// Set failure reason if provided
+		if d.ReasonID != nil && *d.ReasonID != 0 {
+			detail.FailureReasonID = d.ReasonID
 		}
 
 		// Validate and process each detail based on action
@@ -122,6 +129,18 @@ func (uc *ReplacementUseCase) Create(ctx context.Context, req *request.CreateRep
 			detail.NewTyreSerialNum = newTyre.SerialNumber
 			detail.NewTyrePattern = getPatternName(newTyre)
 			detail.NewTyreSize = getSizeName(newTyre)
+			// Store RTD of tyre at mount time so it appears in history
+			detail.NewTyreTread1 = newTyre.RTD1
+			detail.NewTyreTread2 = newTyre.RTD2
+			// Capture tyre's accumulated lifetime at mount time
+			if newTyre.MountHM == nil || *newTyre.MountHM == 0 {
+				detail.NewTyreCurrentLife = 0 // brand new tyre
+			} else {
+				detail.NewTyreCurrentLife = newTyre.Lifetime // remounted tyre
+			}
+			// Store HM unit saat ban dipasang — untuk kalkulasi old_tyre_lifetime saat dismount
+			hmAtMount := derefFloat(req.CurrentLifeHM)
+			detail.NewTyreHM = &hmAtMount
 
 		case "dismount":
 			if d.OldTyreID != nil {
@@ -139,6 +158,8 @@ func (uc *ReplacementUseCase) Create(ctx context.Context, req *request.CreateRep
 				detail.OldTyrePattern = getPatternName(oldTyre)
 				detail.OldTyreSize = getSizeName(oldTyre)
 				detail.OldTyreStatus = oldTyre.Status
+				// Capture tyre's accumulated lifetime BEFORE it is updated
+				detail.NewTyreCurrentLife = oldTyre.Lifetime
 				// d.OldTyreTread1/2 come from user input (OldTyreTread1/2 in request) — do NOT overwrite
 			}
 
@@ -176,17 +197,55 @@ func (uc *ReplacementUseCase) Create(ctx context.Context, req *request.CreateRep
 					return nil, ErrReplacementPositionOccupied
 				}
 			}
+
+			// Detail 1: Dismount old tyre
 			detail.OldTyreSerialNum = oldTyre.SerialNumber
 			detail.OldTyrePattern = getPatternName(oldTyre)
 			detail.OldTyreSize = getSizeName(oldTyre)
 			detail.OldTyreStatus = oldTyre.Status
-			// d.OldTyreTread1/2 come from user input (OldTyreTread1/2 in request) — do NOT overwrite
-			detail.NewTyreSerialNum = newTyre.SerialNumber
-			detail.NewTyrePattern = getPatternName(newTyre)
-			detail.NewTyreSize = getSizeName(newTyre)
+			detail.NewTyreCurrentLife = oldTyre.Lifetime // Old tyre's accumulated lifetime
+			details = append(details, detail)
+
+			// Detail 2: Mount new tyre — populate RTD from new tyre RTD field (not RTD1 which may be nil)
+			// This ensures MountWithHM receives a non-nil RTD so tyre_master.rtd stays in sync
+			newTyreRtd := newTyre.RTD
+			hmAtMount := derefFloat(req.CurrentLifeHM)
+			newTyreDetail := entity.ReplacementDetail{
+				Position:            detail.Position,
+				Action:             "mount", // Mount the new tyre
+				OldTyreID:          detail.OldTyreID,
+				NewTyreID:          detail.NewTyreID,
+				NewTyreSerialNum:   newTyre.SerialNumber,
+				NewTyrePattern:     getPatternName(newTyre),
+				NewTyreSize:        getSizeName(newTyre),
+				NewTyreTread1:      &newTyreRtd, // single RTD column — non-nil so MountWithHM updates tyre_master.rtd
+				NewTyreTread2:      nil,
+				NewTyreCurrentLife: func() float64 {
+					if newTyre.MountHM == nil || *newTyre.MountHM == 0 {
+						return 0 // brand new tyre — starts at 0 lifetime
+					}
+					return newTyre.Lifetime // remounted tyre — preserve accumulated lifetime
+				}(),
+				NewTyreHM:          &hmAtMount, // HM unit saat ban dipasang — untuk kalkulasi old_tyre_lifetime saat dismount
+				HMReading:           nil, // unit HM recorded at replacement level, not per-tyre detail
+			}
+			details = append(details, newTyreDetail)
+
+			// Skip the normal detail append since we already added both
+			continue
 		}
 
 		details = append(details, detail)
+	} // end for req.Details loop
+
+	// Calculate hm_plan: must be > current_life_hm
+	// Temporary solution: hm_plan = max(hm_reading + 5000, current_life_hm + 5000)
+	currentLifeHM := derefFloat(req.CurrentLifeHM)
+	hmPlan := currentLifeHM + 5000 // minimum default
+	for _, d := range details {
+		if d.HMReading != nil && *d.HMReading + 5000 > hmPlan {
+			hmPlan = *d.HMReading + 5000
+		}
 	}
 
 	// Create the replacement record
@@ -198,47 +257,72 @@ func (uc *ReplacementUseCase) Create(ctx context.Context, req *request.CreateRep
 		Date:          date,
 		HMUpdate:      derefFloat(req.HMUpdate),
 		CurrentLifeHM: derefFloat(req.CurrentLifeHM),
-		HMPlan:        derefFloat(req.HMPlan),
+		HMPlan:        hmPlan,
 		Remarks:       req.Remarks,
 		CreatedBy:     operatorID,
 		Details:       details,
 	}
 
-	result, err := uc.replacementRepo.Create(replacement)
-	if err != nil {
-		return nil, err
-	}
-
-	// Apply tyre status changes after creation
+	// Phase 1: Mount all tyres — handle both "mount" and "swap" details (both have NewTyreID)
+	// For "mount" detail: RTD comes from new tyre's current RTD (correct)
+	// For "swap" detail: RTD is nil (don't update new tyre's RTD during a swap)
 	for _, d := range details {
-		if d.Action == "mount" && d.NewTyreID != nil {
-			// Mount: update tyre to mounted
+		if d.NewTyreID != nil {
 			newTyre, _ := uc.tyreRepo.GetByID(*d.NewTyreID)
 			if newTyre != nil {
-				uc.tyreRepo.Mount(newTyre.ID, *req.UnitID, d.Position, d.NewTyreTread1, d.NewTyreTread2)
+				mountHM := derefFloat(req.CurrentLifeHM)
+				uc.tyreRepo.MountWithHM(newTyre.ID, *req.UnitID, d.Position, d.NewTyreTread1, d.NewTyreTread2, mountHM)
 			}
-		} else if (d.Action == "dismount" || d.Action == "swap") && d.OldTyreID != nil {
-			// Dismount/Swap: update old tyre to spare or scrap
+		}
+	}
+
+	// Phase 2: Update lifetime and dismount status AFTER MountWithHM
+	for i, d := range details {
+		if (d.Action == "dismount" || d.Action == "swap") && d.OldTyreID != nil {
 			oldTyre, _ := uc.tyreRepo.GetByID(*d.OldTyreID)
 			if oldTyre != nil {
+				mountHM, _ := uc.tyreRepo.GetMountHM(oldTyre.ID)
+				currentHM := derefFloat(req.CurrentLifeHM)
+				uc.tyreRepo.UpdateLifetime(oldTyre.ID, mountHM, currentHM)
+
+				// Re-fetch tyre to get UPDATED lifetime AFTER UpdateLifetime
+				updatedTyre, _ := uc.tyreRepo.GetByID(*d.OldTyreID)
+				if updatedTyre != nil {
+					details[i].NewTyreCurrentLife = updatedTyre.Lifetime
+				}
+
 				newStatus := string(entity.TyreStatusSpare)
 				if d.NewTyreStatus != "" {
 					newStatus = d.NewTyreStatus
 				} else {
-					// Determine status based on RTD
-					if oldTyre.RTD < 2.0 {
+					if oldTyre.RTD < 10.0 {
 						newStatus = string(entity.TyreStatusScrap)
 					}
 				}
 				uc.tyreRepo.Dismount(oldTyre.ID, newStatus, d.OldTyreTread1, d.OldTyreTread2)
 			}
 		}
+	}
 
-		// Swap: also mount the new tyre to this position
-		if d.Action == "swap" && d.NewTyreID != nil {
-			newTyre, _ := uc.tyreRepo.GetByID(*d.NewTyreID)
-			if newTyre != nil {
-				uc.tyreRepo.Mount(newTyre.ID, *req.UnitID, d.Position, d.NewTyreTread1, d.NewTyreTread2)
+	// Phase 3 removed — Phase 1 handles all tyre mounting; Phase 2 handles dismount.
+	// Redundant MountWithHM calls in old Phase 3 were overwriting new tyre's RTD.
+
+	result, err := uc.replacementRepo.Create(replacement)
+	if err != nil {
+		return nil, err
+	}
+
+	// Phase 3: Calculate old_tyre_lifetime for dismount/swap records
+	// old_tyre_lifetime = HM saat dilepas - HM saat ban pertama kali dipasang di unit ini
+	currentHM := derefFloat(req.CurrentLifeHM)
+	for _, d := range result.Details {
+		if (d.Action == "dismount" || d.Action == "swap") && d.OldTyreID != nil {
+			lastMount, _ := uc.replacementRepo.GetLastMountByTyreID(*d.OldTyreID)
+			if lastMount != nil && lastMount.NewTyreHM != nil {
+				oldTyreLifetime := currentHM - *lastMount.NewTyreHM
+				if oldTyreLifetime > 0 {
+					uc.replacementRepo.UpdateDetailOldTyreLifetime(d.ID, oldTyreLifetime)
+				}
 			}
 		}
 	}

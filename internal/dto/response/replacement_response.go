@@ -132,7 +132,7 @@ func ToReplacementResponse(e *entity.Replacement) *ReplacementResponse {
 		}
 		resp.Details = append(resp.Details, dto)
 
-		if resp.Action == "" {
+		if resp.Action == "" || (resp.Action == "swap" && d.Action == "mount") {
 			resp.Action = d.Action
 			resp.Position = d.Position
 			if d.OldTyreID != nil && d.OldTyreSerialNum != "" {

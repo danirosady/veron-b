@@ -13,6 +13,9 @@ type TyreRepository interface {
 	GetByUnitID(unitID uint) ([]*entity.TyreMaster, error)
 	GetSpareTyres(companyID uint) ([]*entity.TyreMaster, error)
 	Mount(tyreID uint, unitID uint, position string, rtd1, rtd2 *float64) error
+	MountWithHM(tyreID uint, unitID uint, position string, rtd1, rtd2 *float64, mountHM float64) error
+	UpdateLifetime(tyreID uint, mountHM, currentHM float64) error
+	GetMountHM(tyreID uint) (float64, error)
 	Dismount(tyreID uint, status string, rtd1, rtd2 *float64) error
 	GetTyreHistory(tyreID uint) ([]*entity.TyreHistoryItem, error)
 }

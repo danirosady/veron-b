@@ -7,14 +7,18 @@ import (
 )
 
 type TyreHistoryItemResponse struct {
-	ID              uint             `json:"id"`
-	ReplacementDate time.Time        `json:"replacement_date"`
-	HM              float64          `json:"hm"`
-	Position        string           `json:"position"`
-	Action          string           `json:"action"`
-	RTD             *float64         `json:"rtd,omitempty"`
-	Remarks         string           `json:"remarks,omitempty"`
-	Unit            *entity.Unit     `json:"unit,omitempty"`
+	ID              uint         `json:"id"`
+	ReplacementDate time.Time    `json:"replacement_date"`
+	HM              float64      `json:"hm"`
+	CurrentLifeHM   float64      `json:"current_life_hm"`
+	Position        string       `json:"position"`
+	Action          string       `json:"action"`
+	RTD             *float64    `json:"rtd,omitempty"`
+	RTDATMount      *float64    `json:"rtd_at_mount,omitempty"`
+	RTDAtDismount   *float64    `json:"rtd_at_dismount,omitempty"`
+	LifeHM          *float64    `json:"life_hm,omitempty"`
+	Remarks         string       `json:"remarks,omitempty"`
+	Unit            *entity.Unit `json:"unit,omitempty"`
 }
 
 func ToTyreHistoryResponses(items []*entity.TyreHistoryItem) []*TyreHistoryItemResponse {
@@ -32,10 +36,14 @@ func ToTyreHistoryItemResponse(e *entity.TyreHistoryItem) *TyreHistoryItemRespon
 	return &TyreHistoryItemResponse{
 		ID:              e.ID,
 		ReplacementDate: e.ReplacementDate,
-		HM:              e.HM,
+		HM:              e.CurrentLifeHM,
+		CurrentLifeHM:   e.CurrentLifeHM,
 		Position:        e.Position,
 		Action:          e.Action,
 		RTD:             e.RTD,
+		RTDATMount:      e.RTDATMount,
+		RTDAtDismount:   e.RTDAtDismount,
+		LifeHM:          e.LifeHM,
 		Remarks:         e.Remarks,
 		Unit:            e.Unit,
 	}

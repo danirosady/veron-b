@@ -203,6 +203,8 @@ func (uc *TyreUseCase) Create(ctx context.Context, companyID uint, req *request.
 		Barcode:    barcode,
 		SerialNumber:    serial,
 		DOTCode:         req.DOTCode,
+		DOT:            req.DOT,
+		Cost:            req.Cost,
 		Type:            tyreType,
 		SizeID:          req.SizeID,
 		BrandID:         req.BrandID,
@@ -281,7 +283,16 @@ func (uc *TyreUseCase) Update(ctx context.Context, id uint, req *request.UpdateT
 		rtd = (*req.RTD1 + *req.RTD2) / 2.0
 	}
 
-	tyre.DOTCode = req.DOTCode
+	// Update only if values are provided (preserve existing if empty/nil)
+	if req.DOTCode != "" {
+		tyre.DOTCode = req.DOTCode
+	}
+	if req.DOT != "" {
+		tyre.DOT = req.DOT
+	}
+	if req.Cost != nil {
+		tyre.Cost = req.Cost
+	}
 	if req.Type != "" {
 		tyre.Type = req.Type
 	}

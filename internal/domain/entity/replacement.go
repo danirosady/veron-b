@@ -17,7 +17,7 @@ type Replacement struct {
 	Date        time.Time  `gorm:"column:date;type:date;not null" json:"date"`
 	HMUpdate    float64    `gorm:"column:hm_update;type:decimal(15,2);not null;default:0" json:"hm_update"`
 	CurrentLifeHM float64 `gorm:"column:current_life_hm;type:decimal(15,2);not null" json:"current_life_hm"`
-	HMPlan      float64    `gorm:"column:hm_plan;type:decimal(15,2);not null" json:"hm_plan"`
+	HMPlan      float64  `gorm:"column:hm_plan;type:decimal(15,2);not null" json:"hm_plan"`
 	Remarks     string     `gorm:"column:remarks;type:text" json:"remarks,omitempty"`
 	CreatedBy   uint       `gorm:"column:created_by;not null" json:"created_by"`
 	Creator     *User      `gorm:"foreignKey:CreatedBy" json:"creator,omitempty"`

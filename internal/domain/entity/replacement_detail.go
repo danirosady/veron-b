@@ -31,9 +31,12 @@ type ReplacementDetail struct {
 	NewTyreTread1     *float64 `gorm:"column:new_tyre_tread_1;type:decimal(5,2)" json:"new_tyre_tread_1,omitempty"`
 	NewTyreTread2     *float64 `gorm:"column:new_tyre_tread_2;type:decimal(5,2)" json:"new_tyre_tread_2,omitempty"`
 	NewTyreCurrentLife float64 `gorm:"column:new_tyre_current_lifetime;type:decimal(15,2);not null;default:0" json:"new_tyre_current_lifetime"`
+	NewTyreHM         *float64 `gorm:"column:new_tyre_hm;type:decimal(15,2)" json:"new_tyre_hm,omitempty"`
 	NewTyreStatus     string   `gorm:"column:new_tyre_status;size:50" json:"new_tyre_status,omitempty"`
 
-	Remark   string    `gorm:"column:remark;type:text" json:"remark,omitempty"`
+	Remark    string    `gorm:"column:remark;type:text" json:"remark,omitempty"`
+	Location  string    `gorm:"column:location;size:255" json:"location,omitempty"`
+	HMReading *float64  `gorm:"column:hm_reading;type:decimal(15,2)" json:"hm_reading,omitempty"`
 	CreatedAt time.Time `gorm:"column:created_at" json:"created_at"`
 }
 

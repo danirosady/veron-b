@@ -72,7 +72,7 @@ func (r *tyreRepository) loadCurrentMount(tyre *entity.TyreMaster) {
 	var row struct {
 		Position  string    `gorm:"column:position"`
 		MountDate time.Time `gorm:"column:mount_date"`
-		MountHM   float64   `gorm:"column:hm_update"`
+		MountHM   float64   `gorm:"column:mount_hm"`
 		UnitID    uint      `gorm:"column:unit_id"`
 		UnitCode  string    `gorm:"column:unit_id_str"`
 		UnitPlate string    `gorm:"column:plate_number"`
@@ -83,7 +83,7 @@ func (r *tyreRepository) loadCurrentMount(tyre *entity.TyreMaster) {
 		SELECT
 			rd.position,
 			rd.created_at AS mount_date,
-			r.hm_update,
+			COALESCE(rd.hm_reading, r.hm_update) AS mount_hm,
 			u.id AS unit_id,
 			u.unit_id AS unit_id_str,
 			u.plate_number,
@@ -175,7 +175,7 @@ func (r *tyreRepository) GetBySerialNumber(sn string) (*entity.TyreMaster, error
 }
 
 func (r *tyreRepository) Update(tyre *entity.TyreMaster) error {
-	return r.db.Model(tyre).Select("brand_id", "size_id", "pattern_id", "type", "rtd", "rtd1", "rtd2", "psi", "remarks", "status", "dot_code").Updates(tyre).Error
+	return r.db.Model(tyre).Select("brand_id", "size_id", "pattern_id", "type", "rtd", "rtd1", "rtd2", "psi", "remarks", "status", "dot_code", "dot", "cost").Updates(tyre).Error
 }
 
 func (r *tyreRepository) Delete(id uint) error {
@@ -348,6 +348,56 @@ func (r *tyreRepository) Mount(tyreID uint, unitID uint, position string, rtd1, 
 		Updates(updates).Error
 }
 
+// MountWithHM mounts a tyre and records the unit's HM at mount time (for lifetime tracking).
+func (r *tyreRepository) MountWithHM(tyreID uint, unitID uint, position string, rtd1, rtd2 *float64, mountHM float64) error {
+	updates := map[string]interface{}{
+		"unit_id":           unitID,
+		"mounted_position":  position,
+		"status":            "mounted",
+		"mount_hm":          mountHM,
+	}
+	if rtd1 != nil {
+		updates["rtd1"] = rtd1
+		updates["rtd"] = *rtd1
+	}
+	if rtd2 != nil {
+		updates["rtd2"] = rtd2
+	}
+	return r.db.Model(&entity.TyreMaster{}).
+		Where("id = ?", tyreID).
+		Updates(updates).Error
+}
+
+// UpdateLifetime adds to the tyre's lifetime based on HM at mount and current HM.
+func (r *tyreRepository) UpdateLifetime(tyreID uint, mountHM, currentHM float64) error {
+	// Get current tyre to check existing lifetime
+	var tyre entity.TyreMaster
+	if err := r.db.Where("id = ?", tyreID).First(&tyre).Error; err != nil {
+		return err
+	}
+	// Calculate delta: how many HM the tyre accumulated while mounted
+	if mountHM > 0 && currentHM > mountHM {
+		delta := currentHM - mountHM
+		newLifetime := tyre.Lifetime + delta
+		return r.db.Model(&entity.TyreMaster{}).
+			Where("id = ?", tyreID).
+			Update("lifetime", newLifetime).Error
+	}
+	return nil
+}
+
+// GetMountHM returns the HM at which a tyre was last mounted.
+func (r *tyreRepository) GetMountHM(tyreID uint) (float64, error) {
+	var tyre entity.TyreMaster
+	if err := r.db.Select("mount_hm").Where("id = ?", tyreID).First(&tyre).Error; err != nil {
+		return 0, err
+	}
+	if tyre.MountHM != nil {
+		return *tyre.MountHM, nil
+	}
+	return 0, nil
+}
+
 func (r *tyreRepository) Dismount(tyreID uint, status string, rtd1, rtd2 *float64) error {
 	updates := map[string]interface{}{
 		"unit_id":           nil,
@@ -371,19 +421,35 @@ func (r *tyreRepository) GetTyreHistory(tyreID uint) ([]*entity.TyreHistoryItem,
 		SELECT
 			rd.id,
 			rd.created_at AS replacement_date,
-			r.hm_update AS hm,
 			rd.position,
 			rd.action,
-			COALESCE(rd.new_tyre_tread_1, rd.new_tyre_tread_2) AS rtd,
+			CASE
+				WHEN rd.action IN ('dismount', 'swap')
+					THEN COALESCE(rd.old_tyre_tread_1, rd.old_tyre_tread_2)
+				ELSE COALESCE(rd.new_tyre_tread_1, rd.new_tyre_tread_2, tm.rtd)
+			END AS rtd,
+			-- RTD saat ban dipasang (dari mount record)
+			CASE WHEN rd.action = 'mount' THEN COALESCE(rd.new_tyre_tread_1, rd.new_tyre_tread_2) ELSE NULL END AS rtd_at_mount,
+			-- RTD saat ban dilepas (dari dismount record)
+			CASE WHEN rd.action IN ('dismount', 'swap') THEN COALESCE(rd.old_tyre_tread_1, rd.old_tyre_tread_2) ELSE NULL END AS rtd_at_dismount,
+			-- Life HM earned during this mount cycle (from dismount record)
+			CASE WHEN rd.action IN ('dismount', 'swap') THEN rd.old_tyre_lifetime ELSE NULL END AS life_hm,
 			rd.remark AS remarks,
 			u.id AS unit_id,
 			u.unit_id AS unit_code,
 			u.plate_number AS unit_plate_number,
 			u.unit_type AS unit_type,
-			u.status AS unit_status
+			u.status AS unit_status,
+			-- Current Life HM: accumulated lifetime at this event
+			CASE
+				WHEN rd.action = 'mount' THEN COALESCE(rd.new_tyre_current_lifetime, 0)
+				WHEN rd.new_tyre_current_lifetime IS NOT NULL THEN rd.new_tyre_current_lifetime
+				ELSE COALESCE(tm.lifetime, 0)
+			END AS current_life_hm
 		FROM replacement_details rd
 		JOIN replacements r ON r.id = rd.replacement_id
 		JOIN units u ON u.id = r.unit_id
+		LEFT JOIN tyre_master tm ON tm.id = rd.new_tyre_id
 		WHERE rd.new_tyre_id = ? OR rd.old_tyre_id = ?
 		ORDER BY rd.created_at DESC
 	`, tyreID, tyreID).Rows()
@@ -399,9 +465,12 @@ func (r *tyreRepository) GetTyreHistory(tyreID uint) ([]*entity.TyreHistoryItem,
 		var unitCode, unitPlate, unitType, unitStatus string
 
 		rows.Scan(
-			&item.ID, &item.ReplacementDate, &item.HM,
-			&item.Position, &item.Action, &item.RTD, &item.Remarks,
+			&item.ID, &item.ReplacementDate,
+			&item.Position, &item.Action, &item.RTD,
+			&item.RTDATMount, &item.RTDAtDismount, &item.LifeHM,
+			&item.Remarks,
 			&unitID, &unitCode, &unitPlate, &unitType, &unitStatus,
+			&item.CurrentLifeHM,
 		)
 
 		if unitID != nil {

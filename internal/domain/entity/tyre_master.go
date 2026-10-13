@@ -23,6 +23,7 @@ type TyreMaster struct {
 	Barcode      string            `gorm:"column:barcode;size:100;uniqueIndex;not null" json:"barcode"`
 	SerialNumber string            `gorm:"column:serial_number;size:100;uniqueIndex;not null" json:"serial_number"`
 	DOTCode      string            `gorm:"column:dot_code;size:100" json:"dot_code,omitempty"`
+	DOT          string            `gorm:"column:dot;size:10" json:"dot,omitempty"` // DOT code (e.g., "3522" = week 35, 2022)
 	Type         string            `gorm:"column:type;size:50;not null;default:'Radial'" json:"type"`
 
 	SizeID    uint             `gorm:"column:size_id;not null" json:"size_id"`
@@ -34,9 +35,11 @@ type TyreMaster struct {
 
 	OTD      float64  `gorm:"column:otd;type:decimal(5,2);not null;default:0" json:"otd"`
 	RTD      float64  `gorm:"column:rtd;type:decimal(5,2);not null;default:0" json:"rtd"`
+	Cost     *float64 `gorm:"column:cost;type:decimal(15,2)" json:"cost,omitempty"` // Tyre price/cost
 	RTD1     *float64 `gorm:"column:rtd1;type:decimal(5,2)" json:"rtd_1,omitempty"`
 	RTD2     *float64 `gorm:"column:rtd2;type:decimal(5,2)" json:"rtd_2,omitempty"`
 	Lifetime float64  `gorm:"column:lifetime;type:decimal(15,2);not null;default:0" json:"lifetime"`
+	MountHM  *float64 `gorm:"column:mount_hm;type:decimal(15,2)" json:"mount_hm,omitempty"`
 	PSI      *float64 `gorm:"column:psi;type:decimal(5,2)" json:"psi,omitempty"`
 
 	Status  string `gorm:"column:status;size:20;not null;default:'spare'" json:"status"`

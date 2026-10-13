@@ -157,3 +157,29 @@ func (r *replacementRepository) Update(replacement *entity.Replacement) error {
 func (r *replacementRepository) Delete(id uint) error {
 	return r.db.Delete(&entity.Replacement{}, id).Error
 }
+
+// GetLastMountByTyreID returns the most recent mount record for a given tyre.
+func (r *replacementRepository) GetLastMountByTyreID(tyreID uint) (*entity.ReplacementDetail, error) {
+	var detail entity.ReplacementDetail
+	err := r.db.Table("replacement_details rd").
+		Select("rd.*").
+		Joins("JOIN replacements r ON rd.replacement_id = r.id").
+		Where("rd.new_tyre_id = ? AND rd.action = 'mount'", tyreID).
+		Order("r.id DESC").
+		Limit(1).
+		Scan(&detail).Error
+	if err != nil {
+		return nil, err
+	}
+	if detail.ID == 0 {
+		return nil, nil
+	}
+	return &detail, nil
+}
+
+// UpdateDetailOldTyreLifetime updates the old_tyre_lifetime field for a replacement detail.
+func (r *replacementRepository) UpdateDetailOldTyreLifetime(detailID uint, oldTyreLifetime float64) error {
+	return r.db.Model(&entity.ReplacementDetail{}).
+		Where("id = ?", detailID).
+		Update("old_tyre_lifetime", oldTyreLifetime).Error
+}

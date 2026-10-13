@@ -12,6 +12,12 @@ import (
 	"github.com/tms/tyre/internal/usecase"
 )
 
+// PaginatedReportData wraps report data with pagination metadata
+type PaginatedReportData struct {
+	Data interface{} `json:"data"`
+	Meta *response.PaginationMeta `json:"meta"`
+}
+
 type ReportHandler struct {
 	reportUseCase *usecase.ReportUseCase
 }
@@ -31,7 +37,15 @@ func (h *ReportHandler) GetReplacementReport(c *gin.Context) {
 		return
 	}
 
-	response.Success(c, http.StatusOK, "Success", report)
+	response.Success(c, http.StatusOK, "Success", PaginatedReportData{
+		Data: report,
+		Meta: &response.PaginationMeta{
+			Total:      int64(len(report)),
+			TotalPages: 1,
+			Page:       1,
+			PerPage:    len(report),
+		},
+	})
 }
 
 // GetInventoryReport returns an inventory report
@@ -45,7 +59,15 @@ func (h *ReportHandler) GetInventoryReport(c *gin.Context) {
 		return
 	}
 
-	response.Success(c, http.StatusOK, "Success", report)
+	response.Success(c, http.StatusOK, "Success", PaginatedReportData{
+		Data: report,
+		Meta: &response.PaginationMeta{
+			Total:      int64(len(report)),
+			TotalPages: 1,
+			Page:       1,
+			PerPage:    len(report),
+		},
+	})
 }
 
 // GetScheduleReport returns a tyre schedule report
@@ -59,7 +81,59 @@ func (h *ReportHandler) GetScheduleReport(c *gin.Context) {
 		return
 	}
 
-	response.Success(c, http.StatusOK, "Success", report)
+	response.Success(c, http.StatusOK, "Success", PaginatedReportData{
+		Data: report,
+		Meta: &response.PaginationMeta{
+			Total:      int64(len(report)),
+			TotalPages: 1,
+			Page:       1,
+			PerPage:    len(report),
+		},
+	})
+}
+
+// GetTyreSummaryReport returns a tyre summary report (Cost/HM per tyre)
+// GET /api/v1/reports/tyre-summary
+func (h *ReportHandler) GetTyreSummaryReport(c *gin.Context) {
+	filters := buildReportFilters(c)
+
+	report, err := h.reportUseCase.GetTyreSummaryReport(c.Request.Context(), filters)
+	if err != nil {
+		response.InternalError(c, "Gagal mengambil data laporan tyre summary")
+		return
+	}
+
+	response.Success(c, http.StatusOK, "Success", PaginatedReportData{
+		Data: report,
+		Meta: &response.PaginationMeta{
+			Total:      int64(len(report)),
+			TotalPages: 1,
+			Page:       1,
+			PerPage:    len(report),
+		},
+	})
+}
+
+// GetPotentialHMReport returns a Potential HM report
+// GET /api/v1/reports/potential-hm
+func (h *ReportHandler) GetPotentialHMReport(c *gin.Context) {
+	filters := buildReportFilters(c)
+
+	report, err := h.reportUseCase.GetPotentialHMReport(c.Request.Context(), filters)
+	if err != nil {
+		response.InternalError(c, "Gagal mengambil data laporan potential HM")
+		return
+	}
+
+	response.Success(c, http.StatusOK, "Success", PaginatedReportData{
+		Data: report,
+		Meta: &response.PaginationMeta{
+			Total:      int64(len(report)),
+			TotalPages: 1,
+			Page:       1,
+			PerPage:    len(report),
+		},
+	})
 }
 
 // GetReplacementReportExport exports replacement report as CSV
@@ -84,18 +158,18 @@ func (h *ReportHandler) GetReplacementReportExport(c *gin.Context) {
 		for _, row := range report {
 			record := []string{
 				row.Date,
-				row.UnitCode,
-				row.PlateNumber,
+				row.Unit.Code,
+				row.Unit.PlateNumber,
 				row.CompanyName,
 				row.Position,
 				row.Action,
-				row.OldTyreSN,
-				row.NewTyreSN,
-				row.Brand,
-				row.Size,
-				row.Pattern,
-				fmt.Sprintf("%.2f", row.OldRTD),
-				fmt.Sprintf("%.2f", row.NewRTD),
+				row.OldTyre.SerialNumber,
+				row.NewTyre.SerialNumber,
+				row.TyreSpec.BrandName,
+				row.TyreSpec.SizeName,
+				row.TyreSpec.Pattern,
+				fmt.Sprintf("%.2f", row.RTDBefore),
+				fmt.Sprintf("%.2f", row.RTDAfter),
 				fmt.Sprintf("%.2f", row.HM),
 				row.DriverName,
 				row.OperatorName,
@@ -120,7 +194,7 @@ func (h *ReportHandler) GetInventoryReportExport(c *gin.Context) {
 	headers := []string{
 		"Barcode", "Serial Number", "Brand", "Size", "Pattern",
 		"Status", "OTD", "RTD", "Percent Worn (%)", "Unit Code",
-		"Plate Number", "Company", "Last Position", "Last Mount Date",
+		"Plate Number", "Company", "Last Position",
 		"Total Depth", "Current Depth",
 	}
 
@@ -129,18 +203,17 @@ func (h *ReportHandler) GetInventoryReportExport(c *gin.Context) {
 			record := []string{
 				row.Barcode,
 				row.SerialNumber,
-				row.Brand,
-				row.Size,
+				row.Brand.Name,
+				row.Size.Name,
 				row.Pattern,
 				row.Status,
 				fmt.Sprintf("%.2f", row.OTD),
 				fmt.Sprintf("%.2f", row.RTD),
 				fmt.Sprintf("%.2f", row.PercentWorn),
-				row.UnitCode,
-				row.PlateNumber,
+				row.Unit.Code,
+				row.Unit.PlateNumber,
 				row.CompanyName,
 				row.LastPosition,
-				row.LastMountDate,
 				fmt.Sprintf("%.2f", row.TotalDepth),
 				fmt.Sprintf("%.2f", row.CurrentDepth),
 			}
@@ -249,5 +322,7 @@ func (h *ReportHandler) RegisterRoutes(rg *gin.RouterGroup) {
 		reports.GET("/inventory/export", h.GetInventoryReportExport)
 		reports.GET("/schedule", h.GetScheduleReport)
 		reports.GET("/schedule/export", h.GetScheduleReportExport)
+		reports.GET("/tyre-summary", h.GetTyreSummaryReport)
+		reports.GET("/potential-hm", h.GetPotentialHMReport)
 	}
 }

@@ -260,6 +260,7 @@ CREATE TABLE IF NOT EXISTS tyre_master (
     rtd1                DECIMAL(5,2) NULL,
     rtd2                DECIMAL(5,2) NULL,
     lifetime            DECIMAL(15,2) NOT NULL DEFAULT 0,
+    mount_hm           DECIMAL(15,2) NULL,
     psi                 DECIMAL(5,2) NULL,
     status              VARCHAR(20) NOT NULL DEFAULT 'spare',
     remarks             TEXT NULL,
@@ -352,6 +353,7 @@ CREATE TABLE IF NOT EXISTS replacement_details (
     new_tyre_current_lifetime  DECIMAL(15,2) NOT NULL DEFAULT 0,
     new_tyre_status            VARCHAR(50) NULL,
     remark                     TEXT NULL,
+    location                   VARCHAR(255) NULL,
     created_at                 TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
     CONSTRAINT fk_rd_replacement FOREIGN KEY (replacement_id)
         REFERENCES replacements(id) ON DELETE CASCADE,

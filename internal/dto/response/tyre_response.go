@@ -13,6 +13,8 @@ type TyreResponse struct {
 	Barcode         string              `json:"barcode"`
 	SerialNumber    string              `json:"serial_number"`
 	DOTCode         string              `json:"dot_code,omitempty"`
+	DOT             string              `json:"dot,omitempty"`              // DOT code
+	Cost            *float64            `json:"cost,omitempty"`             // Tyre price/cost
 	Type            string              `json:"type"`
 	SizeID          uint                `json:"size_id"`
 	BrandID         uint                `json:"brand_id"`
@@ -45,6 +47,8 @@ func ToTyreResponse(e *entity.TyreMaster) *TyreResponse {
 		Barcode:         e.Barcode,
 		SerialNumber:    e.SerialNumber,
 		DOTCode:         e.DOTCode,
+		DOT:             e.DOT,
+		Cost:            e.Cost,
 		Type:            e.Type,
 		SizeID:          e.SizeID,
 		BrandID:         e.BrandID,
