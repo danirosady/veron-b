@@ -3,7 +3,6 @@ package handlers
 import (
 	"encoding/csv"
 	"fmt"
-	"net/http"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
@@ -12,11 +11,6 @@ import (
 	"github.com/tms/tyre/internal/usecase"
 )
 
-// PaginatedReportData wraps report data with pagination metadata
-type PaginatedReportData struct {
-	Data interface{} `json:"data"`
-	Meta *response.PaginationMeta `json:"meta"`
-}
 
 type ReportHandler struct {
 	reportUseCase *usecase.ReportUseCase
@@ -37,14 +31,11 @@ func (h *ReportHandler) GetReplacementReport(c *gin.Context) {
 		return
 	}
 
-	response.Success(c, http.StatusOK, "Success", PaginatedReportData{
-		Data: report,
-		Meta: &response.PaginationMeta{
-			Total:      int64(len(report)),
-			TotalPages: 1,
-			Page:       1,
-			PerPage:    len(report),
-		},
+	response.SuccessWithPagination(c, "Success", report, &response.PaginationMeta{
+		Total:      int64(len(report)),
+		TotalPages: 1,
+		Page:       1,
+		PerPage:    len(report),
 	})
 }
 
@@ -59,14 +50,11 @@ func (h *ReportHandler) GetInventoryReport(c *gin.Context) {
 		return
 	}
 
-	response.Success(c, http.StatusOK, "Success", PaginatedReportData{
-		Data: report,
-		Meta: &response.PaginationMeta{
-			Total:      int64(len(report)),
-			TotalPages: 1,
-			Page:       1,
-			PerPage:    len(report),
-		},
+	response.SuccessWithPagination(c, "Success", report, &response.PaginationMeta{
+		Total:      int64(len(report)),
+		TotalPages: 1,
+		Page:       1,
+		PerPage:    len(report),
 	})
 }
 
@@ -81,14 +69,11 @@ func (h *ReportHandler) GetScheduleReport(c *gin.Context) {
 		return
 	}
 
-	response.Success(c, http.StatusOK, "Success", PaginatedReportData{
-		Data: report,
-		Meta: &response.PaginationMeta{
-			Total:      int64(len(report)),
-			TotalPages: 1,
-			Page:       1,
-			PerPage:    len(report),
-		},
+	response.SuccessWithPagination(c, "Success", report, &response.PaginationMeta{
+		Total:      int64(len(report)),
+		TotalPages: 1,
+		Page:       1,
+		PerPage:    len(report),
 	})
 }
 
@@ -103,14 +88,11 @@ func (h *ReportHandler) GetTyreSummaryReport(c *gin.Context) {
 		return
 	}
 
-	response.Success(c, http.StatusOK, "Success", PaginatedReportData{
-		Data: report,
-		Meta: &response.PaginationMeta{
-			Total:      int64(len(report)),
-			TotalPages: 1,
-			Page:       1,
-			PerPage:    len(report),
-		},
+	response.SuccessWithPagination(c, "Success", report, &response.PaginationMeta{
+		Total:      int64(len(report)),
+		TotalPages: 1,
+		Page:       1,
+		PerPage:    len(report),
 	})
 }
 
@@ -125,14 +107,11 @@ func (h *ReportHandler) GetPotentialHMReport(c *gin.Context) {
 		return
 	}
 
-	response.Success(c, http.StatusOK, "Success", PaginatedReportData{
-		Data: report,
-		Meta: &response.PaginationMeta{
-			Total:      int64(len(report)),
-			TotalPages: 1,
-			Page:       1,
-			PerPage:    len(report),
-		},
+	response.SuccessWithPagination(c, "Success", report, &response.PaginationMeta{
+		Total:      int64(len(report)),
+		TotalPages: 1,
+		Page:       1,
+		PerPage:    len(report),
 	})
 }
 
