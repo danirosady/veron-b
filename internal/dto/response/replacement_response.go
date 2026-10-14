@@ -46,29 +46,32 @@ type OperatorDTO struct {
 }
 
 type ReplacementDetailDTO struct {
-	ID                 uint    `json:"id"`
-	ReplacementID      uint    `json:"replacement_id"`
-	Position           string  `json:"position"`
-	Action             string  `json:"action"`
-	OldTyreID         *uint   `json:"old_tyre_id,omitempty"`
-	OldTyreSerialNum  string  `json:"old_tyre_serial_number,omitempty"`
-	OldTyrePattern    string  `json:"old_tyre_pattern,omitempty"`
-	OldTyreSize       string  `json:"old_tyre_size,omitempty"`
-	OldTyreTread1     *float64 `json:"old_tyre_tread_1,omitempty"`
-	OldTyreTread2     *float64 `json:"old_tyre_tread_2,omitempty"`
-	OldTyreLifetime   *float64 `json:"old_tyre_lifetime,omitempty"`
-	OldTyreStatus     string  `json:"old_tyre_status,omitempty"`
-	FailureReasonID   *uint   `json:"failure_reason_id,omitempty"`
-	FromUnitID        string  `json:"from_unit_id,omitempty"`
-	NewTyreID         *uint   `json:"new_tyre_id,omitempty"`
-	NewTyreSerialNum  string  `json:"new_tyre_serial_number,omitempty"`
-	NewTyrePattern    string  `json:"new_tyre_pattern,omitempty"`
-	NewTyreSize       string  `json:"new_tyre_size,omitempty"`
-	NewTyreTread1     *float64 `json:"new_tyre_tread_1,omitempty"`
-	NewTyreTread2     *float64 `json:"new_tyre_tread_2,omitempty"`
-	NewTyreCurrentLife float64 `json:"new_tyre_current_lifetime"`
-	NewTyreStatus     string  `json:"new_tyre_status,omitempty"`
-	Remark            string  `json:"remark,omitempty"`
+	ID                 uint          `json:"id"`
+	ReplacementID      uint          `json:"replacement_id"`
+	Position           string        `json:"position"`
+	Action             string        `json:"action"`
+	OldTyreID         *uint         `json:"old_tyre_id,omitempty"`
+	OldTyreSerialNum  string        `json:"old_tyre_serial_number,omitempty"`
+	OldTyrePattern    string        `json:"old_tyre_pattern,omitempty"`
+	OldTyreSize       string        `json:"old_tyre_size,omitempty"`
+	OldTyreTread1     *float64      `json:"old_tyre_tread_1,omitempty"`
+	OldTyreTread2     *float64      `json:"old_tyre_tread_2,omitempty"`
+	OldTyreLifetime   *float64      `json:"old_tyre_lifetime,omitempty"`
+	OldTyreStatus     string        `json:"old_tyre_status,omitempty"`
+	FailureReasonID   *uint         `json:"failure_reason_id,omitempty"`
+	FromUnitID        string        `json:"from_unit_id,omitempty"`
+	NewTyreID         *uint         `json:"new_tyre_id,omitempty"`
+	NewTyreSerialNum  string        `json:"new_tyre_serial_number,omitempty"`
+	NewTyrePattern    string        `json:"new_tyre_pattern,omitempty"`
+	NewTyreSize       string        `json:"new_tyre_size,omitempty"`
+	NewTyreTread1     *float64      `json:"new_tyre_tread_1,omitempty"`
+	NewTyreTread2     *float64      `json:"new_tyre_tread_2,omitempty"`
+	NewTyreCurrentLife float64      `json:"new_tyre_current_lifetime"`
+	NewTyreStatus     string        `json:"new_tyre_status,omitempty"`
+	Remark            string        `json:"remark,omitempty"`
+	SupervisorID      *uint         `json:"supervisor_id,omitempty"`
+	SupervisorName    string        `json:"supervisor_name,omitempty"`
+	Tyremen           []OperatorDTO `json:"tyremen,omitempty"`
 }
 
 func ToReplacementResponse(e *entity.Replacement) *ReplacementResponse {
@@ -129,6 +132,21 @@ func ToReplacementResponse(e *entity.Replacement) *ReplacementResponse {
 			NewTyreCurrentLife: d.NewTyreCurrentLife,
 			NewTyreStatus:   d.NewTyreStatus,
 			Remark:           d.Remark,
+			SupervisorID:    d.SupervisorID,
+		}
+		if d.Supervisor != nil {
+			dto.SupervisorName = d.Supervisor.Name
+		}
+		if len(d.Employees) > 0 {
+			dto.Tyremen = make([]OperatorDTO, 0, len(d.Employees))
+			for _, re := range d.Employees {
+				if re.Employee != nil {
+					dto.Tyremen = append(dto.Tyremen, OperatorDTO{
+						ID:   re.Employee.ID,
+						Name: re.Employee.Name,
+					})
+				}
+			}
 		}
 		resp.Details = append(resp.Details, dto)
 

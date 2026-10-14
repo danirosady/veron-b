@@ -4,27 +4,29 @@ type CreateReplacementRequest struct {
 	UnitID        *uint                      `json:"unit_id" binding:"required"`
 	DriverID      *uint                      `json:"driver_id" binding:"required"`
 	Date          string                     `json:"date" binding:"required"`
-	HMUpdate      *float64                   `json:"hm_update"`
-	CurrentLifeHM *float64                   `json:"current_life_hm" binding:"required,gte=0"`
-	HMPlan        *float64                   `json:"hm_plan"` // Deprecated: using potential_hm instead
-	Remarks       string                     `json:"remarks"`
+	HMUpdate      *float64                  `json:"hm_update"`
+	CurrentLifeHM *float64                  `json:"current_life_hm" binding:"required,gte=0"`
+	HMPlan        *float64                  `json:"hm_plan"`
+	Remarks       string                    `json:"remarks"`
 	Details       []ReplacementDetailRequest `json:"details" binding:"required,min=1,dive"`
 }
 
 type ReplacementDetailRequest struct {
-	Position      string   `json:"position" binding:"required,max=20"`
-	Action        string   `json:"action" binding:"required,oneof=mount dismount swap"`
-	OldTyreID     *uint    `json:"old_tyre_id"`
-	NewTyreID     *uint    `json:"new_tyre_id"`
-	ReasonID      *uint    `json:"failure_reason_id"`
-	OldTyreTread1 *float64 `json:"old_tyre_tread_1"`
-	OldTyreTread2 *float64 `json:"old_tyre_tread_2"`
-	NewTyreTread1 *float64 `json:"new_tyre_tread_1"`
-	NewTyreTread2 *float64 `json:"new_tyre_tread_2"`
-	NewTyreStatus string   `json:"new_tyre_status"`
-	Remark        string   `json:"remark"`
-	Location      string   `json:"location"`
-	HMReading     *float64 `json:"hm_reading"` // HM at time of replacement (filled during queue process)
+	Position       string   `json:"position" binding:"required,max=20"`
+	Action         string   `json:"action" binding:"required,oneof=mount dismount swap"`
+	OldTyreID      *uint    `json:"old_tyre_id"`
+	NewTyreID      *uint    `json:"new_tyre_id"`
+	ReasonID       *uint    `json:"failure_reason_id"`
+	OldTyreTread1  *float64 `json:"old_tyre_tread_1"`
+	OldTyreTread2  *float64 `json:"old_tyre_tread_2"`
+	NewTyreTread1  *float64 `json:"new_tyre_tread_1"`
+	NewTyreTread2  *float64 `json:"new_tyre_tread_2"`
+	NewTyreStatus  string   `json:"new_tyre_status"`
+	Remark         string   `json:"remark"`
+	Location       string   `json:"location"`
+	HMReading      *float64 `json:"hm_reading"`
+	SupervisorID   *uint    `json:"supervisor_id"`
+	TyremanIDs     []uint   `json:"tyresman_ids"`
 }
 
 type ListReplacementRequest struct {

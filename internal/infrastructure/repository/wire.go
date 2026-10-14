@@ -10,7 +10,7 @@ type Repositories struct {
 	Company     repository.CompanyRepository
 	Project     repository.ProjectRepository
 	Unit        repository.UnitRepository
-	Driver      repository.DriverRepository
+	Employee    repository.EmployeeRepository
 	Tyre        repository.TyreRepository
 	Replacement repository.ReplacementRepository
 	Master      repository.MasterRepository
@@ -22,7 +22,7 @@ func NewRepositories(db *gorm.DB) *Repositories {
 		Company:     NewCompanyRepository(db),
 		Project:     NewProjectRepository(db),
 		Unit:        NewUnitRepository(db),
-		Driver:      NewDriverRepository(db),
+		Employee:    NewEmployeeRepository(db),
 		Tyre:        NewTyreRepository(db),
 		Replacement: NewReplacementRepository(db),
 		Master:      NewMasterRepository(db),

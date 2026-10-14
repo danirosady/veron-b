@@ -195,7 +195,7 @@ func (uc *ReportUseCase) GetReplacementReport(ctx context.Context, filters map[s
 		Joins("JOIN replacements r ON rd.replacement_id = r.id").
 		Joins("LEFT JOIN units u ON r.unit_id = u.id").
 		Joins("LEFT JOIN companies c ON r.company_id = c.id").
-		Joins("LEFT JOIN drivers d ON r.driver_id = d.id").
+		Joins("LEFT JOIN employees d ON r.driver_id = d.id AND d.role = 'driver'").
 		Joins("LEFT JOIN users usr ON r.created_by = usr.id").
 		Joins("LEFT JOIN tyre_master t_old ON rd.old_tyre_id = t_old.id").
 		Joins("LEFT JOIN tyre_master t_new ON rd.new_tyre_id = t_new.id").

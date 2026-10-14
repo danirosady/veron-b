@@ -37,6 +37,14 @@ type ReplacementDetail struct {
 	Remark    string    `gorm:"column:remark;type:text" json:"remark,omitempty"`
 	Location  string    `gorm:"column:location;size:255" json:"location,omitempty"`
 	HMReading *float64  `gorm:"column:hm_reading;type:decimal(15,2)" json:"hm_reading,omitempty"`
+
+	// Supervisor who approved this action
+	SupervisorID *uint       `gorm:"column:supervisor_id" json:"supervisor_id,omitempty"`
+	Supervisor   *Employee   `gorm:"foreignKey:SupervisorID" json:"supervisor,omitempty"`
+
+	// Tyremen who performed this action (via junction table)
+	Employees []ReplacementEmployee `gorm:"many2many:replacement_employees;" json:"employees,omitempty"`
+
 	CreatedAt time.Time `gorm:"column:created_at" json:"created_at"`
 }
 

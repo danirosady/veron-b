@@ -30,6 +30,9 @@ func (r *replacementRepository) Create(replacement *entity.Replacement) (*entity
 		Preload("Creator").
 		Preload("Details").
 		Preload("Details.FailureReason").
+		Preload("Details.Supervisor").
+		Preload("Details.Employees").
+		Preload("Details.Employees.Employee").
 		First(&created, replacement.ID).Error
 	if err != nil {
 		return nil, err
@@ -53,6 +56,9 @@ func (r *replacementRepository) GetByID(id uint) (*entity.Replacement, error) {
 		Preload("Creator").
 		Preload("Details").
 		Preload("Details.FailureReason").
+		Preload("Details.Supervisor").
+		Preload("Details.Employees").
+		Preload("Details.Employees.Employee").
 		First(&replacement, id).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -103,6 +109,9 @@ func (r *replacementRepository) List(page, perPage int, companyID, projectID, un
 		Preload("Creator").
 		Preload("Details").
 		Preload("Details.FailureReason").
+		Preload("Details.Supervisor").
+		Preload("Details.Employees").
+		Preload("Details.Employees.Employee").
 		Offset(offset).Limit(perPage).
 		Order("date DESC, id DESC").
 		Find(&replacements).Error; err != nil {
@@ -182,4 +191,21 @@ func (r *replacementRepository) UpdateDetailOldTyreLifetime(detailID uint, oldTy
 	return r.db.Model(&entity.ReplacementDetail{}).
 		Where("id = ?", detailID).
 		Update("old_tyre_lifetime", oldTyreLifetime).Error
+}
+
+// CreateReplacementEmployees creates junction records linking a replacement detail to tyreman employees.
+func (r *replacementRepository) CreateReplacementEmployees(detailID uint, employeeIDs []uint) error {
+	if len(employeeIDs) == 0 {
+		return nil
+	}
+	for _, empID := range employeeIDs {
+		rec := entity.ReplacementEmployee{
+			ReplacementDetailID: detailID,
+			EmployeeID:         empID,
+		}
+		if err := r.db.Create(&rec).Error; err != nil {
+			return err
+		}
+	}
+	return nil
 }

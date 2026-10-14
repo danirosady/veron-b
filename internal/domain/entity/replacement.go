@@ -13,7 +13,7 @@ type Replacement struct {
 	UnitID      uint       `gorm:"column:unit_id;not null" json:"unit_id"`
 	Unit        *Unit      `gorm:"foreignKey:UnitID;references:ID;constraint:-" json:"unit,omitempty"`
 	DriverID    uint       `gorm:"column:driver_id;not null" json:"driver_id"`
-	Driver      *Driver    `gorm:"foreignKey:DriverID" json:"driver,omitempty"`
+	Driver      *Employee  `gorm:"foreignKey:DriverID" json:"driver,omitempty"`
 	Date        time.Time  `gorm:"column:date;type:date;not null" json:"date"`
 	HMUpdate    float64    `gorm:"column:hm_update;type:decimal(15,2);not null;default:0" json:"hm_update"`
 	CurrentLifeHM float64 `gorm:"column:current_life_hm;type:decimal(15,2);not null" json:"current_life_hm"`

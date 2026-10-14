@@ -30,7 +30,7 @@ type ReplacementUseCase struct {
 	replacementRepo repository.ReplacementRepository
 	tyreRepo       repository.TyreRepository
 	unitRepo       repository.UnitRepository
-	driverRepo     repository.DriverRepository
+	employeeRepo   repository.EmployeeRepository
 }
 
 // NewReplacementUseCase creates a new ReplacementUseCase instance.
@@ -38,13 +38,13 @@ func NewReplacementUseCase(
 	replacementRepo repository.ReplacementRepository,
 	tyreRepo repository.TyreRepository,
 	unitRepo repository.UnitRepository,
-	driverRepo repository.DriverRepository,
+	employeeRepo repository.EmployeeRepository,
 ) *ReplacementUseCase {
 	return &ReplacementUseCase{
 		replacementRepo: replacementRepo,
-		tyreRepo:       tyreRepo,
-		unitRepo:       unitRepo,
-		driverRepo:     driverRepo,
+		tyreRepo:        tyreRepo,
+		unitRepo:        unitRepo,
+		employeeRepo:    employeeRepo,
 	}
 }
 
@@ -65,9 +65,9 @@ func (uc *ReplacementUseCase) Create(ctx context.Context, req *request.CreateRep
 		return nil, ErrReplacementUnitNotFound
 	}
 
-	// Validate driver exists if provided
+	// Validate driver exists if provided (driver is stored as employee with role='driver')
 	if req.DriverID != nil && *req.DriverID != 0 {
-		driver, err := uc.driverRepo.GetByID(*req.DriverID)
+		driver, err := uc.employeeRepo.GetByID(*req.DriverID)
 		if err != nil {
 			return nil, err
 		}
@@ -92,6 +92,7 @@ func (uc *ReplacementUseCase) Create(ctx context.Context, req *request.CreateRep
 			Remark:       d.Remark,
 			Location:     d.Location,
 			HMReading:   d.HMReading,
+			SupervisorID: d.SupervisorID,
 		}
 
 		// Set failure reason if provided
@@ -204,6 +205,7 @@ func (uc *ReplacementUseCase) Create(ctx context.Context, req *request.CreateRep
 			detail.OldTyreSize = getSizeName(oldTyre)
 			detail.OldTyreStatus = oldTyre.Status
 			detail.NewTyreCurrentLife = oldTyre.Lifetime // Old tyre's accumulated lifetime
+			detail.SupervisorID = d.SupervisorID
 			details = append(details, detail)
 
 			// Detail 2: Mount new tyre — populate RTD from new tyre RTD field (not RTD1 which may be nil)
@@ -228,6 +230,7 @@ func (uc *ReplacementUseCase) Create(ctx context.Context, req *request.CreateRep
 				}(),
 				NewTyreHM:          &hmAtMount, // HM unit saat ban dipasang — untuk kalkulasi old_tyre_lifetime saat dismount
 				HMReading:           nil, // unit HM recorded at replacement level, not per-tyre detail
+				SupervisorID:        d.SupervisorID,
 			}
 			details = append(details, newTyreDetail)
 
@@ -310,6 +313,27 @@ func (uc *ReplacementUseCase) Create(ctx context.Context, req *request.CreateRep
 	result, err := uc.replacementRepo.Create(replacement)
 	if err != nil {
 		return nil, err
+	}
+
+	// Phase 4: Create replacement_employees junction records for tyreman
+	// Build a map from request details for lookup by (position, action)
+	reqDetailMap := make(map[string]*request.ReplacementDetailRequest)
+	for i := range req.Details {
+		key := req.Details[i].Position + "|" + req.Details[i].Action
+		reqDetailMap[key] = &req.Details[i]
+		// For swap requests, also map by (position, "swap") to match both result details
+		if req.Details[i].Action == "swap" {
+			reqDetailMap[req.Details[i].Position+"|dismount"] = &req.Details[i]
+			reqDetailMap[req.Details[i].Position+"|mount"] = &req.Details[i]
+		}
+	}
+	for _, d := range result.Details {
+		key := d.Position + "|" + d.Action
+		if reqD, ok := reqDetailMap[key]; ok && len(reqD.TyremanIDs) > 0 {
+			if err := uc.replacementRepo.CreateReplacementEmployees(d.ID, reqD.TyremanIDs); err != nil {
+				return nil, err
+			}
+		}
 	}
 
 	// Phase 3: Calculate old_tyre_lifetime for dismount/swap records

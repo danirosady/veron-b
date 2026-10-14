@@ -45,7 +45,7 @@ func (uc *DashboardUseCase) GetStats(companyID *uint) (*DashboardStats, error) {
 		if err := uc.db.Table("units").Where("company_id = ? AND status = 'active'", *companyID).Count(&stats.TotalUnits).Error; err != nil {
 			return nil, err
 		}
-		if err := uc.db.Table("drivers").Where("company_id = ? AND status = 'active'", *companyID).Count(&stats.TotalDrivers).Error; err != nil {
+		if err := uc.db.Table("employees").Where("company_id = ? AND status = 'active' AND role = 'driver'", *companyID).Count(&stats.TotalDrivers).Error; err != nil {
 			return nil, err
 		}
 		if err := uc.db.Table("tyre_master").Where("company_id = ?", *companyID).Count(&stats.TotalTyres).Error; err != nil {
@@ -74,7 +74,7 @@ func (uc *DashboardUseCase) GetStats(companyID *uint) (*DashboardStats, error) {
 		if err := uc.db.Table("units").Where("status = 'active'").Count(&stats.TotalUnits).Error; err != nil {
 			return nil, err
 		}
-		if err := uc.db.Table("drivers").Where("status = 'active'").Count(&stats.TotalDrivers).Error; err != nil {
+		if err := uc.db.Table("employees").Where("status = 'active' AND role = 'driver'").Count(&stats.TotalDrivers).Error; err != nil {
 			return nil, err
 		}
 		if err := uc.db.Table("tyre_master").Count(&stats.TotalTyres).Error; err != nil {

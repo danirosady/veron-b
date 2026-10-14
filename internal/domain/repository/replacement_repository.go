@@ -15,4 +15,5 @@ type ReplacementRepository interface {
 	GetLastReplacementByUnitID(unitID uint) (*entity.Replacement, error)
 	GetLastMountByTyreID(tyreID uint) (*entity.ReplacementDetail, error)
 	UpdateDetailOldTyreLifetime(detailID uint, oldTyreLifetime float64) error
+	CreateReplacementEmployees(detailID uint, employeeIDs []uint) error
 }

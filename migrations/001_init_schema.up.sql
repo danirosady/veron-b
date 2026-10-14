@@ -529,24 +529,24 @@ INSERT INTO users (name, email, password, role, company_id, status) VALUES
 ('Admin KPP', 'admin@kpp.com', '$2a$10$Em30c27ErDXVIWBY0jopT.IsQTRYS4Kpd.Y792p.i1dVPOIgxootm', 'admin_company', 3, 'active')
 ON CONFLICT (email) DO NOTHING;
 
--- Seed Drivers (3 per company)
-INSERT INTO drivers (company_id, name, employee_id, phone, license_number, status)
-SELECT c.id, d.name, d.emp_id, d.phone, d.license, 'active'
+-- Seed Drivers (3 per company — role column added in migration 005)
+INSERT INTO drivers (company_id, name, employee_id, phone, status)
+SELECT c.id, d.name, d.emp_id, d.phone, 'active'
 FROM companies c
 CROSS JOIN (VALUES
     -- BAS drivers
-    ('Rudi Hartono', 'DRV001', '0813-1111-2222', 'SIM B-1234-KT'),
-    ('Surya Darma', 'DRV002', '0813-3333-4444', 'SIM B-5678-KT'),
-    ('Asep Saepulloh', 'DRV003', '0813-5555-6666', 'SIM B-9012-KT'),
+    ('Rudi Hartono', 'DRV001', '0813-1111-2222'),
+    ('Surya Darma', 'DRV002', '0813-3333-4444'),
+    ('Asep Saepulloh', 'DRV003', '0813-5555-6666'),
     -- BEI drivers
-    ('Joko Widodo', 'DRV010', '0813-2222-3333', 'SIM B-2234-SM'),
-    ('Dedi Kusuma', 'DRV011', '0813-4444-5555', 'SIM B-6678-SM'),
-    ('Fajar Nugroho', 'DRV012', '0813-6666-7777', 'SIM B-0034-SM'),
+    ('Joko Widodo', 'DRV010', '0813-2222-3333'),
+    ('Dedi Kusuma', 'DRV011', '0813-4444-5555'),
+    ('Fajar Nugroho', 'DRV012', '0813-6666-7777'),
     -- KPP drivers
-    ('Heri Susanto', 'DRV020', '0813-7777-8888', 'SIM B-4456-KT'),
-    ('Agus Salim', 'DRV021', '0813-8888-9999', 'SIM B-7789-KT'),
-    ('Rizki Pratama', 'DRV022', '0813-9999-0000', 'SIM B-0090-KT')
-) AS d(name, emp_id, phone, license)
+    ('Heri Susanto', 'DRV020', '0813-7777-8888'),
+    ('Agus Salim', 'DRV021', '0813-8888-9999'),
+    ('Rizki Pratama', 'DRV022', '0813-9999-0000')
+) AS d(name, emp_id, phone)
 WHERE (c.name = 'Berkat Anuegrah Sejahtera' AND d.emp_id IN ('DRV001','DRV002','DRV003'))
    OR (c.name = 'Borneo Energy Indonesia' AND d.emp_id IN ('DRV010','DRV011','DRV012'))
    OR (c.name = 'Kalimantan Prima Persada' AND d.emp_id IN ('DRV020','DRV021','DRV022'))

@@ -17,7 +17,7 @@ var (
 	ErrCompanyNameTooLong  = errors.New("company name must not exceed 255 characters")
 	ErrCompanyNameExists   = errors.New("company name already exists")
 	ErrCompanyEmailInvalid = errors.New("company email is invalid")
-	ErrCompanyHasActive    = errors.New("company has active projects, units, or drivers")
+	ErrCompanyHasActive    = errors.New("company has active projects, units, or employees")
 )
 
 // CompanyUseCase handles business logic for company management.
@@ -25,7 +25,7 @@ type CompanyUseCase struct {
 	companyRepo repository.CompanyRepository
 	projectRepo repository.ProjectRepository
 	unitRepo    repository.UnitRepository
-	driverRepo  repository.DriverRepository
+	employeeRepo repository.EmployeeRepository
 }
 
 // NewCompanyUseCase creates a new CompanyUseCase instance.
@@ -33,13 +33,13 @@ func NewCompanyUseCase(
 	companyRepo repository.CompanyRepository,
 	projectRepo repository.ProjectRepository,
 	unitRepo repository.UnitRepository,
-	driverRepo repository.DriverRepository,
+	employeeRepo repository.EmployeeRepository,
 ) *CompanyUseCase {
 	return &CompanyUseCase{
-		companyRepo: companyRepo,
-		projectRepo: projectRepo,
-		unitRepo:    unitRepo,
-		driverRepo:  driverRepo,
+		companyRepo:  companyRepo,
+		projectRepo:  projectRepo,
+		unitRepo:     unitRepo,
+		employeeRepo: employeeRepo,
 	}
 }
 

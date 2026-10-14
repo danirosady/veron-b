@@ -90,7 +90,7 @@ func (r *companyRepository) HasActiveData(id uint) (bool, error) {
 		return true, nil
 	}
 
-	if err := r.db.Model(&entity.Driver{}).Where("company_id = ? AND status = 'active'", id).Count(&count).Error; err != nil {
+	if err := r.db.Model(&entity.Employee{}).Where("company_id = ? AND status = 'active' AND role = 'driver'", id).Count(&count).Error; err != nil {
 		return false, err
 	}
 
