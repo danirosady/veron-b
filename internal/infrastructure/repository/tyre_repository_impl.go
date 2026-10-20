@@ -35,6 +35,9 @@ type tyreWithUnit struct {
 	// Pattern fields
 	PatternID2  uint   `gorm:"column:p_id"`
 	PatternName string `gorm:"column:p_name"`
+	// Remarks fields
+	RemarksID2        *uint  `gorm:"column:mr_id"`
+	RemarksStatusName string `gorm:"column:mr_status_name"`
 }
 
 func NewTyreRepository(db *gorm.DB) repository.TyreRepository {
@@ -124,6 +127,7 @@ func (r *tyreRepository) GetByID(id uint) (*entity.TyreMaster, error) {
 		Preload("Size").
 		Preload("Brand").
 		Preload("Pattern").
+		Preload("Remarks").
 		Where("id = ?", int64(id)).First(&tyre).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -143,6 +147,7 @@ func (r *tyreRepository) GetByBarcode(barcode string) (*entity.TyreMaster, error
 		Preload("Size").
 		Preload("Brand").
 		Preload("Pattern").
+		Preload("Remarks").
 		Where("barcode = ?", barcode).First(&tyre).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -162,6 +167,7 @@ func (r *tyreRepository) GetBySerialNumber(sn string) (*entity.TyreMaster, error
 		Preload("Size").
 		Preload("Brand").
 		Preload("Pattern").
+		Preload("Remarks").
 		Where("serial_number = ?", sn).First(&tyre).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -175,7 +181,7 @@ func (r *tyreRepository) GetBySerialNumber(sn string) (*entity.TyreMaster, error
 }
 
 func (r *tyreRepository) Update(tyre *entity.TyreMaster) error {
-	return r.db.Model(tyre).Select("brand_id", "size_id", "pattern_id", "type", "rtd", "rtd1", "rtd2", "psi", "remarks", "status", "dot_code", "dot", "cost").Updates(tyre).Error
+	return r.db.Model(tyre).Select("brand_id", "size_id", "pattern_id", "type", "rtd", "rtd1", "rtd2", "psi", "remarks_id", "status", "dot_code", "cost").Updates(tyre).Error
 }
 
 func (r *tyreRepository) Delete(id uint) error {
@@ -217,12 +223,14 @@ func (r *tyreRepository) List(page, perPage int, companyID uint, status, brandID
 		u.status AS u_status, u.company_id AS u_company_id, u.project_id AS u_project_id,
 		s.id AS s_id, s.name AS s_name,
 		b.id AS b_id, b.name AS b_name,
-		p.id AS p_id, p.name AS p_name
+		p.id AS p_id, p.name AS p_name,
+		mr.id AS mr_id, mr.status_name AS mr_status_name
 		FROM tyre_master t
 		LEFT JOIN units u ON u.id = t.unit_id
 		LEFT JOIN master_sizes s ON s.id = t.size_id
 		LEFT JOIN master_brands b ON b.id = t.brand_id
-		LEFT JOIN master_patterns p ON p.id = t.pattern_id`
+		LEFT JOIN master_patterns p ON p.id = t.pattern_id
+		LEFT JOIN master_remarks mr ON mr.id = t.remarks_id`
 
 	args := []interface{}{}
 	where := ""
@@ -298,6 +306,9 @@ func (r *tyreRepository) List(page, perPage int, companyID uint, status, brandID
 		if row.PatternID2 > 0 {
 			row.Pattern = &entity.MasterPattern{ID: row.PatternID2, Name: row.PatternName}
 		}
+		if row.RemarksID2 != nil {
+			row.Remarks = &entity.MasterRemark{ID: *row.RemarksID2, StatusName: row.RemarksStatusName}
+		}
 		tyres[i] = &row.TyreMaster
 	}
 
@@ -312,6 +323,7 @@ func (r *tyreRepository) GetByUnitID(unitID uint) ([]*entity.TyreMaster, error) 
 		Preload("Size").
 		Preload("Brand").
 		Preload("Pattern").
+		Preload("Remarks").
 		Order("mounted_position ASC").
 		Find(&tyres).Error
 	return tyres, err
@@ -325,6 +337,7 @@ func (r *tyreRepository) GetSpareTyres(companyID uint) ([]*entity.TyreMaster, er
 		Preload("Size").
 		Preload("Brand").
 		Preload("Pattern").
+		Preload("Remarks").
 		Order("id DESC").
 		Find(&tyres).Error
 	return tyres, err
@@ -332,9 +345,9 @@ func (r *tyreRepository) GetSpareTyres(companyID uint) ([]*entity.TyreMaster, er
 
 func (r *tyreRepository) Mount(tyreID uint, unitID uint, position string, rtd1, rtd2 *float64) error {
 	updates := map[string]interface{}{
-		"unit_id":           unitID,
-		"mounted_position":  position,
-		"status":            "mounted",
+		"unit_id":          unitID,
+		"mounted_position": position,
+		"status":           "mounted",
 	}
 	if rtd1 != nil {
 		updates["rtd1"] = rtd1
@@ -351,10 +364,10 @@ func (r *tyreRepository) Mount(tyreID uint, unitID uint, position string, rtd1, 
 // MountWithHM mounts a tyre and records the unit's HM at mount time (for lifetime tracking).
 func (r *tyreRepository) MountWithHM(tyreID uint, unitID uint, position string, rtd1, rtd2 *float64, mountHM float64) error {
 	updates := map[string]interface{}{
-		"unit_id":           unitID,
-		"mounted_position":  position,
-		"status":            "mounted",
-		"mount_hm":          mountHM,
+		"unit_id":          unitID,
+		"mounted_position": position,
+		"status":           "mounted",
+		"mount_hm":         mountHM,
 	}
 	if rtd1 != nil {
 		updates["rtd1"] = rtd1
@@ -485,4 +498,21 @@ func (r *tyreRepository) GetTyreHistory(tyreID uint) ([]*entity.TyreHistoryItem,
 		items = append(items, &item)
 	}
 	return items, nil
+}
+
+// CreateStatusLog inserts a new tyre status change log entry.
+func (r *tyreRepository) CreateStatusLog(log *entity.TyreStatusLog) error {
+	return r.db.Create(log).Error
+}
+
+// GetStatusLogs returns all status change logs for a tyre, newest first.
+func (r *tyreRepository) GetStatusLogs(tyreID uint) ([]*entity.TyreStatusLog, error) {
+	var logs []*entity.TyreStatusLog
+	err := r.db.
+		Preload("OldRemarks").
+		Preload("NewRemarks").
+		Where("tyre_id = ?", tyreID).
+		Order("changed_at DESC").
+		Find(&logs).Error
+	return logs, err
 }

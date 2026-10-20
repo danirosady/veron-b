@@ -42,8 +42,9 @@ type TyreMaster struct {
 	MountHM  *float64 `gorm:"column:mount_hm;type:decimal(15,2)" json:"mount_hm,omitempty"`
 	PSI      *float64 `gorm:"column:psi;type:decimal(5,2)" json:"psi,omitempty"`
 
-	Status  string `gorm:"column:status;size:20;not null;default:'spare'" json:"status"`
-	Remarks string `gorm:"column:remarks;type:text" json:"remarks,omitempty"`
+	Status       string          `gorm:"column:status;size:20;not null;default:'new_tyre'" json:"status"`
+	RemarksID    *uint          `gorm:"column:remarks_id" json:"remarks_id,omitempty"`
+	Remarks      *MasterRemark `gorm:"foreignKey:RemarksID" json:"remarks,omitempty"`
 
 	CreatedAt time.Time `gorm:"column:created_at" json:"created_at"`
 	UpdatedAt time.Time `gorm:"column:updated_at" json:"updated_at"`
@@ -54,8 +55,9 @@ func (TyreMaster) TableName() string { return "tyre_master" }
 type TyreStatus string
 
 const (
-	TyreStatusSpare      TyreStatus = "spare"
+	TyreStatusNewTyre     TyreStatus = "new_tyre"
+	TyreStatusSpare       TyreStatus = "spare"
 	TyreStatusMounted     TyreStatus = "mounted"
-	TyreStatusDismounted TyreStatus = "dismounted"
-	TyreStatusScrap      TyreStatus = "scrap"
+	TyreStatusDismounted  TyreStatus = "dismounted"
+	TyreStatusScrap       TyreStatus = "scrap"
 )

@@ -417,13 +417,13 @@ func (h *MasterHandler) DeleteAction(c *gin.Context) {
 // POST /api/v1/master/remarks
 func (h *MasterHandler) CreateRemark(c *gin.Context) {
 	var req struct {
-		Name string `json:"name" binding:"required"`
+		StatusName string `json:"status_name" binding:"required"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
 		response.ValidationError(c, err)
 		return
 	}
-	remark, err := h.masterUseCase.CreateRemark(c.Request.Context(), req.Name)
+	remark, err := h.masterUseCase.CreateRemark(c.Request.Context(), req.StatusName)
 	if err != nil {
 		response.InternalError(c, "Gagal membuat remark")
 		return
@@ -440,13 +440,13 @@ func (h *MasterHandler) UpdateRemark(c *gin.Context) {
 		return
 	}
 	var req struct {
-		Name string `json:"name" binding:"required"`
+		StatusName string `json:"status_name" binding:"required"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
 		response.ValidationError(c, err)
 		return
 	}
-	remark, err := h.masterUseCase.UpdateRemark(c.Request.Context(), uint(id), req.Name)
+	remark, err := h.masterUseCase.UpdateRemark(c.Request.Context(), uint(id), req.StatusName)
 	if err != nil {
 		response.InternalError(c, "Gagal mengupdate remark")
 		return

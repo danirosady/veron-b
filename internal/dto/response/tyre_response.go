@@ -5,33 +5,33 @@ import (
 )
 
 type TyreResponse struct {
-	ID              uint                `json:"id"`
-	CompanyID       uint                `json:"company_id"`
-	UnitID          *uint               `json:"unit_id,omitempty"`
-	MountedPosition *string             `json:"mounted_position,omitempty"`
-	CurrentMount    *entity.CurrentMount `json:"current_mount,omitempty"`
-	Barcode         string              `json:"barcode"`
-	SerialNumber    string              `json:"serial_number"`
-	DOTCode         string              `json:"dot_code,omitempty"`
-	DOT             string              `json:"dot,omitempty"`              // DOT code
-	Cost            *float64            `json:"cost,omitempty"`             // Tyre price/cost
-	Type            string              `json:"type"`
-	SizeID          uint                `json:"size_id"`
-	BrandID         uint                `json:"brand_id"`
-	PatternID       uint                `json:"pattern_id"`
-	OTD             float64             `json:"otd"`
-	RTD             float64             `json:"rtd"`
-	RTD1            *float64            `json:"rtd_1,omitempty"`
-	RTD2            *float64            `json:"rtd_2,omitempty"`
-	Lifetime        float64             `json:"lifetime"`
-	PSI             *float64            `json:"psi,omitempty"`
-	Status          string              `json:"status"`
-	Remarks         string              `json:"remarks,omitempty"`
-	Company         *entity.Company         `json:"company,omitempty"`
-	Unit            *entity.Unit             `json:"unit,omitempty"`
-	Size            *entity.MasterSize      `json:"size,omitempty"`
-	Brand           *entity.MasterBrand     `json:"brand,omitempty"`
-	Pattern         *entity.MasterPattern   `json:"pattern,omitempty"`
+	ID              uint                   `json:"id"`
+	CompanyID       uint                   `json:"company_id"`
+	UnitID          *uint                  `json:"unit_id,omitempty"`
+	MountedPosition *string                `json:"mounted_position,omitempty"`
+	CurrentMount    *entity.CurrentMount   `json:"current_mount,omitempty"`
+	Barcode         string                 `json:"barcode"`
+	SerialNumber    string                 `json:"serial_number"`
+	DOTCode         string                 `json:"dot_code"`
+	Cost            *float64              `json:"cost,omitempty"`
+	Type            string                 `json:"type"`
+	SizeID          uint                   `json:"size_id"`
+	BrandID         uint                   `json:"brand_id"`
+	PatternID       uint                   `json:"pattern_id"`
+	OTD             float64                `json:"otd"`
+	RTD             float64                `json:"rtd"`
+	RTD1            *float64              `json:"rtd_1,omitempty"`
+	RTD2            *float64              `json:"rtd_2,omitempty"`
+	Lifetime        float64                `json:"lifetime"`
+	PSI             *float64              `json:"psi,omitempty"`
+	Status          string                 `json:"status"`
+	RemarksID       *uint                 `json:"remarks_id,omitempty"`
+	Company         *entity.Company       `json:"company,omitempty"`
+	Unit            *entity.Unit          `json:"unit,omitempty"`
+	Size            *entity.MasterSize     `json:"size,omitempty"`
+	Brand           *entity.MasterBrand   `json:"brand,omitempty"`
+	Pattern         *entity.MasterPattern `json:"pattern,omitempty"`
+	Remarks         *entity.MasterRemark  `json:"remarks,omitempty"`
 }
 
 func ToTyreResponse(e *entity.TyreMaster) *TyreResponse {
@@ -47,7 +47,6 @@ func ToTyreResponse(e *entity.TyreMaster) *TyreResponse {
 		Barcode:         e.Barcode,
 		SerialNumber:    e.SerialNumber,
 		DOTCode:         e.DOTCode,
-		DOT:             e.DOT,
 		Cost:            e.Cost,
 		Type:            e.Type,
 		SizeID:          e.SizeID,
@@ -60,12 +59,13 @@ func ToTyreResponse(e *entity.TyreMaster) *TyreResponse {
 		Lifetime:        e.Lifetime,
 		PSI:             e.PSI,
 		Status:          e.Status,
-		Remarks:         e.Remarks,
+		RemarksID:       e.RemarksID,
 		Company:         e.Company,
 		Unit:            e.Unit,
 		Size:            e.Size,
 		Brand:           e.Brand,
 		Pattern:         e.Pattern,
+		Remarks:         e.Remarks,
 	}
 }
 

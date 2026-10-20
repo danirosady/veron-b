@@ -189,8 +189,13 @@ func (uc *UnitUseCase) Create(ctx context.Context, req *request.CreateUnitReques
 		TyreSizeDefault: req.TyreSizeDefault,
 		UnitType:        req.UnitType,
 		MaxPosition:     maxPos,
-		CurrentHM:       0,
 		Status:          "active",
+	}
+
+	if req.CurrentHM != nil {
+		unit.CurrentHM = *req.CurrentHM
+	} else {
+		unit.CurrentHM = 0
 	}
 
 	if err := uc.unitRepo.Create(unit); err != nil {
@@ -243,6 +248,9 @@ func (uc *UnitUseCase) Update(ctx context.Context, id uint, req *request.UpdateU
 	unit.MaxPosition = maxPos
 	if req.Status != "" {
 		unit.Status = req.Status
+	}
+	if req.CurrentHM != nil {
+		unit.CurrentHM = *req.CurrentHM
 	}
 
 	if err := uc.unitRepo.Update(unit); err != nil {

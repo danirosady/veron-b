@@ -186,7 +186,7 @@ CREATE TABLE IF NOT EXISTS master_actions (
 -- ============================================================
 CREATE TABLE IF NOT EXISTS master_remarks (
     id          BIGSERIAL PRIMARY KEY,
-    name        VARCHAR(100) NOT NULL UNIQUE,
+    status_name VARCHAR(100) NOT NULL UNIQUE,
     code        VARCHAR(50) NULL,
     description TEXT NULL,
     status      VARCHAR(20) NOT NULL DEFAULT 'active',
@@ -262,8 +262,8 @@ CREATE TABLE IF NOT EXISTS tyre_master (
     lifetime            DECIMAL(15,2) NOT NULL DEFAULT 0,
     mount_hm           DECIMAL(15,2) NULL,
     psi                 DECIMAL(5,2) NULL,
-    status              VARCHAR(20) NOT NULL DEFAULT 'spare',
-    remarks             TEXT NULL,
+    status              VARCHAR(20) NOT NULL DEFAULT 'new_tyre',
+    remarks_id          BIGINT NULL REFERENCES master_remarks(id) ON DELETE SET NULL,
     created_at          TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
     updated_at          TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
     CONSTRAINT fk_tyre_master_company FOREIGN KEY (company_id)
@@ -276,7 +276,7 @@ CREATE TABLE IF NOT EXISTS tyre_master (
         REFERENCES master_brands(id) ON DELETE RESTRICT,
     CONSTRAINT fk_tyre_master_pattern FOREIGN KEY (pattern_id)
         REFERENCES master_patterns(id) ON DELETE RESTRICT,
-    CONSTRAINT chk_tyre_master_status CHECK (status IN ('spare', 'mounted', 'dismounted', 'scrap')),
+    CONSTRAINT chk_tyre_master_status CHECK (status IN ('new_tyre', 'spare', 'mounted', 'dismounted', 'scrap')),
     CONSTRAINT chk_tyre_master_rtd CHECK (rtd >= 0),
     CONSTRAINT chk_tyre_master_otd CHECK (otd >= 0),
     CONSTRAINT chk_tyre_master_psi CHECK (psi IS NULL OR psi > 0)
@@ -289,6 +289,7 @@ CREATE INDEX IF NOT EXISTS idx_tyre_master_status ON tyre_master(status);
 CREATE INDEX IF NOT EXISTS idx_tyre_master_brand_id ON tyre_master(brand_id);
 CREATE INDEX IF NOT EXISTS idx_tyre_master_size_id ON tyre_master(size_id);
 CREATE INDEX IF NOT EXISTS idx_tyre_master_pattern_id ON tyre_master(pattern_id);
+CREATE INDEX IF NOT EXISTS idx_tyre_master_remarks_id ON tyre_master(remarks_id);
 
 -- ============================================================
 -- REPLACEMENTS
@@ -399,10 +400,19 @@ INSERT INTO master_actions (name) VALUES
 ('Mount'),('Dismount'),('Swap to Pos 1'),('Swap to Pos 2'),('Swap to Pos 3'),('Swap to Pos 4'),('Swap to Pos 5'),('Swap to Pos 6'),('Swap to Pos 7'),('Swap to Pos 8'),('Swap to Pos 9'),('Swap to Pos 10'),('Repair'),('Scrap')
 ON CONFLICT (name) DO NOTHING;
 
--- Seed master_remarks
-INSERT INTO master_remarks (name) VALUES
-('New Tyre'),('Repair'),('Running'),('Spare'),('Scrap'),('UNIT SECOND HAND'),('Ex Repair'),('Canibal Tyre')
-ON CONFLICT (name) DO NOTHING;
+-- Seed master_remarks (all tyre statuses)
+INSERT INTO master_remarks (id, status_name, status) VALUES
+    (1, 'New Tyre',        'active'),
+    (2, 'Repair',          'active'),
+    (3, 'Running',         'active'),
+    (4, 'Spare',           'active'),
+    (5, 'Scrap',           'active'),
+    (6, 'UNIT SECOND HAND','active'),
+    (7, 'Ex Repair',       'active'),
+    (8, 'Canibal Tyre',    'active'),
+    (9, 'Mounted',         'active'),
+    (10,'Dismounted',      'active')
+ON CONFLICT (status_name) DO NOTHING;
 
 -- ============================================================
 -- UNIT TYPE CONFIGS SEED (final format: poros_1/2/3, Tyre N labels)
@@ -581,12 +591,13 @@ ON CONFLICT DO NOTHING;
 -- BEI: 35 tyres (Unit1=8 mounted, Unit2=4 mounted+4 spare, Unit3=23 spare)
 -- KPP: 35 tyres (Unit1=8 mounted, Unit2=4 mounted+4 spare, Unit3=23 spare)
 -- Brands used: UNINEST, TECHKING, HILO, BRIDGESTONE, ADVANCE, VK TYRE, TRIANGLE, Giti, SAKURA
+-- remarks_id mapping: 4=Spare, 5=Scrap, 9=Mounted, 10=Dismounted
 INSERT INTO tyre_master (
     company_id, unit_id, mounted_position,
     barcode, serial_number, dot_code,
     type, size_id, brand_id, pattern_id,
     otd, rtd, rtd1, rtd2, lifetime, psi,
-    status, remarks
+    status, remarks_id
 )
 SELECT
     c.id,

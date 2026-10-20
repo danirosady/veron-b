@@ -243,18 +243,18 @@ func (r *masterRepository) GetRemarkByID(id uint) (*entity.MasterRemark, error) 
 	return &remark, nil
 }
 
-func (r *masterRepository) CreateRemark(name string) (*entity.MasterRemark, error) {
-	remark := &entity.MasterRemark{Name: name}
+func (r *masterRepository) CreateRemark(statusName string) (*entity.MasterRemark, error) {
+	remark := &entity.MasterRemark{StatusName: statusName}
 	err := r.db.Create(remark).Error
 	return remark, err
 }
 
-func (r *masterRepository) UpdateRemark(id uint, name string) (*entity.MasterRemark, error) {
+func (r *masterRepository) UpdateRemark(id uint, statusName string) (*entity.MasterRemark, error) {
 	var remark entity.MasterRemark
 	if err := r.db.First(&remark, id).Error; err != nil {
 		return nil, err
 	}
-	remark.Name = name
+	remark.StatusName = statusName
 	if err := r.db.Save(&remark).Error; err != nil {
 		return nil, err
 	}

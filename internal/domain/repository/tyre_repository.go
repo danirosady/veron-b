@@ -18,4 +18,8 @@ type TyreRepository interface {
 	GetMountHM(tyreID uint) (float64, error)
 	Dismount(tyreID uint, status string, rtd1, rtd2 *float64) error
 	GetTyreHistory(tyreID uint) ([]*entity.TyreHistoryItem, error)
+
+	// Status log
+	CreateStatusLog(log *entity.TyreStatusLog) error
+	GetStatusLogs(tyreID uint) ([]*entity.TyreStatusLog, error)
 }

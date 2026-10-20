@@ -157,9 +157,9 @@ func ToMasterActionResponses(entities []*entity.MasterAction) []*MasterActionRes
 }
 
 type MasterRemarkResponse struct {
-	ID     uint   `json:"id"`
-	Name   string `json:"name"`
-	Status string `json:"status"`
+	ID         uint   `json:"id"`
+	StatusName string `json:"status_name"`
+	Status     string `json:"status"`
 }
 
 func ToMasterRemarkResponse(e *entity.MasterRemark) *MasterRemarkResponse {
@@ -167,9 +167,9 @@ func ToMasterRemarkResponse(e *entity.MasterRemark) *MasterRemarkResponse {
 		return nil
 	}
 	return &MasterRemarkResponse{
-		ID:     e.ID,
-		Name:   e.Name,
-		Status: e.Status,
+		ID:         e.ID,
+		StatusName: e.StatusName,
+		Status:     e.Status,
 	}
 }
 

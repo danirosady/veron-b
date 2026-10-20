@@ -48,8 +48,8 @@ type MasterRepository interface {
 	// Remarks
 	ListRemarks() ([]*entity.MasterRemark, error)
 	GetRemarkByID(id uint) (*entity.MasterRemark, error)
-	CreateRemark(name string) (*entity.MasterRemark, error)
-	UpdateRemark(id uint, name string) (*entity.MasterRemark, error)
+	CreateRemark(statusName string) (*entity.MasterRemark, error)
+	UpdateRemark(id uint, statusName string) (*entity.MasterRemark, error)
 	DeleteRemark(id uint) error
 
 	// Unit Type Configs

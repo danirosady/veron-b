@@ -45,7 +45,9 @@ func (h *TyreHandler) List(c *gin.Context) {
 		return
 	}
 
-	response.SuccessWithPagination(c, "Success", tyres, response.NewPagination(page, perPage, total))
+	// Convert to response DTOs to ensure DOT fields are properly serialized
+	tyreResponses := dtoResponse.ToTyreResponses(tyres)
+	response.SuccessWithPagination(c, "Success", tyreResponses, response.NewPagination(page, perPage, total))
 }
 
 // GetByID returns a single tyre by ID
@@ -87,6 +89,22 @@ func (h *TyreHandler) GetTyreHistory(c *gin.Context) {
 	response.Success(c, http.StatusOK, "Success", dtoResponse.ToTyreHistoryResponses(history))
 }
 
+// GetTyreStatusLogs returns status change logs for a tyre
+// GET /api/v1/tyres/:id/status-logs
+func (h *TyreHandler) GetTyreStatusLogs(c *gin.Context) {
+	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
+	if err != nil {
+		response.BadRequest(c, "ID tidak valid", nil)
+		return
+	}
+	logs, err := h.tyreUseCase.GetTyreStatusLogs(c.Request.Context(), uint(id))
+	if err != nil {
+		response.InternalError(c, "Gagal mengambil riwayat status")
+		return
+	}
+	response.Success(c, http.StatusOK, "Success", dtoResponse.ToTyreStatusLogResponses(logs))
+}
+
 // GetByBarcode returns a tyre by barcode
 // GET /api/v1/tyres/barcode/:barcode
 func (h *TyreHandler) GetByBarcode(c *gin.Context) {
@@ -109,7 +127,9 @@ func (h *TyreHandler) GetByBarcode(c *gin.Context) {
 		return
 	}
 
-	response.Success(c, http.StatusOK, "Success", tyre)
+	// Convert to response DTO to ensure DOT fields are properly serialized
+	tyreResponse := dtoResponse.ToTyreResponse(tyre)
+	response.Success(c, http.StatusOK, "Success", tyreResponse)
 }
 
 // GetSpareTyres returns all spare (and dismounted) tyres for a company
@@ -127,7 +147,9 @@ func (h *TyreHandler) GetSpareTyres(c *gin.Context) {
 		return
 	}
 
-	response.Success(c, http.StatusOK, "Success", tyres)
+	// Convert to response DTOs to ensure DOT fields are properly serialized
+	tyreResponses := dtoResponse.ToTyreResponses(tyres)
+	response.Success(c, http.StatusOK, "Success", tyreResponses)
 }
 
 // Create creates a new tyre master record
@@ -252,6 +274,7 @@ func (h *TyreHandler) RegisterRoutes(rg *gin.RouterGroup) {
 		tyres.GET("/barcode/:barcode", h.GetByBarcode)
 		tyres.GET("/:id", h.GetByID)
 		tyres.GET("/:id/history", h.GetTyreHistory)
+		tyres.GET("/:id/status-logs", h.GetTyreStatusLogs)
 		tyres.PUT("/:id", h.Update)
 		tyres.DELETE("/:id", h.Delete)
 	}

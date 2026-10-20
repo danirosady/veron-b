@@ -71,12 +71,13 @@ func ToUnitTyrePosition(pos entity.PositionConfig, tyre *entity.TyreMaster, rtd1
 			Lifetime:        tyre.Lifetime,
 			PSI:             tyre.PSI,
 			Status:          tyre.Status,
-			Remarks:         tyre.Remarks,
+			RemarksID:       tyre.RemarksID,
 			Company:         tyre.Company,
 			Unit:            tyre.Unit,
 			Size:            tyre.Size,
 			Brand:           tyre.Brand,
 			Pattern:         tyre.Pattern,
+			Remarks:         tyre.Remarks,
 		}
 	}
 

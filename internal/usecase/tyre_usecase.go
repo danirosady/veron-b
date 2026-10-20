@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"strings"
+	"time"
 
 	"github.com/tms/tyre/internal/domain/entity"
 	"github.com/tms/tyre/internal/domain/repository"
@@ -199,29 +200,40 @@ func (uc *TyreUseCase) Create(ctx context.Context, companyID uint, req *request.
 	}
 
 	tyre := &entity.TyreMaster{
-		CompanyID:  companyID,
-		Barcode:    barcode,
-		SerialNumber:    serial,
-		DOTCode:         req.DOTCode,
-		DOT:            req.DOT,
-		Cost:            req.Cost,
-		Type:            tyreType,
-		SizeID:          req.SizeID,
-		BrandID:         req.BrandID,
-		PatternID:       req.PatternID,
-		OTD:             req.OTD,
-		RTD:             rtd,
-		RTD1:            req.RTD1,
-		RTD2:            req.RTD2,
-		Lifetime:        req.Lifetime,
-		PSI:             req.PSI,
-		Status:          string(entity.TyreStatusSpare),
-		Remarks:         req.Remarks,
+		CompanyID:   companyID,
+		Barcode:     barcode,
+		SerialNumber: serial,
+		DOTCode:     req.DOTCode,
+		Cost:        req.Cost,
+		Type:        tyreType,
+		SizeID:      req.SizeID,
+		BrandID:     req.BrandID,
+		PatternID:   req.PatternID,
+		OTD:         req.OTD,
+		RTD:         rtd,
+		RTD1:        req.RTD1,
+		RTD2:        req.RTD2,
+		Lifetime:    req.Lifetime,
+		PSI:         req.PSI,
+		Status:      string(entity.TyreStatusNewTyre),
+		RemarksID:   req.RemarksID,
 	}
 
 	if err := uc.tyreRepo.Create(tyre); err != nil {
 		return nil, err
 	}
+
+	// Log: ban baru diinput dengan status new_tyre
+	log := &entity.TyreStatusLog{
+		TyreID:       tyre.ID,
+		OldStatus:    "",
+		OldRemarksID: nil,
+		NewStatus:    tyre.Status,
+		NewRemarksID: tyre.RemarksID,
+		Reason:       "Ban baru diinput",
+		ChangedAt:    time.Now(),
+	}
+	_ = uc.tyreRepo.CreateStatusLog(log) // best-effort: log error does not fail the create
 
 	return tyre, nil
 }
@@ -236,8 +248,20 @@ func (uc *TyreUseCase) Update(ctx context.Context, id uint, req *request.UpdateT
 		return nil, ErrTyreNotFound
 	}
 
-	if req.RTD < 0 || req.RTD > tyre.OTD {
-		return nil, ErrTyreRTDExceedsOTD
+	// Capture old values for audit log BEFORE any modifications
+	oldStatus := tyre.Status
+	oldRemarksID := tyre.RemarksID
+	statusChanged := req.Status != "" && req.Status != oldStatus
+	remarksChanged := req.RemarksID != nil && *req.RemarksID != 0 &&
+		(func() bool {
+			if oldRemarksID == nil { return *req.RemarksID != 0 }
+			return *req.RemarksID != *oldRemarksID
+		}())
+
+	if req.RTD != nil {
+		if *req.RTD < 0 || *req.RTD > tyre.OTD {
+			return nil, ErrTyreRTDExceedsOTD
+		}
 	}
 
 	if req.RTD1 != nil {
@@ -278,17 +302,17 @@ func (uc *TyreUseCase) Update(ctx context.Context, id uint, req *request.UpdateT
 		tyre.PatternID = req.PatternID
 	}
 
-	rtd := req.RTD
+	// Handle RTD update
+	if req.RTD != nil {
+		tyre.RTD = *req.RTD
+	}
 	if req.RTD1 != nil && req.RTD2 != nil {
-		rtd = (*req.RTD1 + *req.RTD2) / 2.0
+		tyre.RTD = (*req.RTD1 + *req.RTD2) / 2.0
 	}
 
 	// Update only if values are provided (preserve existing if empty/nil)
 	if req.DOTCode != "" {
 		tyre.DOTCode = req.DOTCode
-	}
-	if req.DOT != "" {
-		tyre.DOT = req.DOT
 	}
 	if req.Cost != nil {
 		tyre.Cost = req.Cost
@@ -296,17 +320,34 @@ func (uc *TyreUseCase) Update(ctx context.Context, id uint, req *request.UpdateT
 	if req.Type != "" {
 		tyre.Type = req.Type
 	}
-	tyre.RTD = rtd
 	tyre.RTD1 = req.RTD1
 	tyre.RTD2 = req.RTD2
 	tyre.PSI = req.PSI
-	tyre.Remarks = req.Remarks
+	tyre.RemarksID = req.RemarksID
 	if req.Status != "" {
 		tyre.Status = req.Status
 	}
 
 	if err := uc.tyreRepo.Update(tyre); err != nil {
 		return nil, err
+	}
+
+	// Log status/remarks change
+	if statusChanged || remarksChanged {
+		var newRemarksID *uint
+		if req.RemarksID != nil && *req.RemarksID != 0 {
+			newRemarksID = req.RemarksID
+		}
+		log := &entity.TyreStatusLog{
+			TyreID:       tyre.ID,
+			OldStatus:    oldStatus,
+			OldRemarksID: oldRemarksID,
+			NewStatus:    tyre.Status,
+			NewRemarksID: newRemarksID,
+			Reason:       "Diubah via form tyre",
+			ChangedAt:    time.Now(),
+		}
+		_ = uc.tyreRepo.CreateStatusLog(log) // best-effort
 	}
 
 	return tyre, nil
@@ -327,4 +368,9 @@ func (uc *TyreUseCase) Delete(ctx context.Context, id uint) error {
 // GetTyreHistory returns all mount/dismount history for a tyre.
 func (uc *TyreUseCase) GetTyreHistory(ctx context.Context, tyreID uint) ([]*entity.TyreHistoryItem, error) {
 	return uc.tyreRepo.GetTyreHistory(tyreID)
+}
+
+// GetTyreStatusLogs returns all status/remarks change logs for a tyre.
+func (uc *TyreUseCase) GetTyreStatusLogs(ctx context.Context, tyreID uint) ([]*entity.TyreStatusLog, error) {
+	return uc.tyreRepo.GetStatusLogs(tyreID)
 }

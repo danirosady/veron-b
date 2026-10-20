@@ -149,13 +149,13 @@ func (uc *MasterUseCase) ListRemarks(ctx context.Context) ([]*entity.MasterRemar
 }
 
 // CreateRemark creates a new remark.
-func (uc *MasterUseCase) CreateRemark(ctx context.Context, name string) (*entity.MasterRemark, error) {
-	return uc.masterRepo.CreateRemark(name)
+func (uc *MasterUseCase) CreateRemark(ctx context.Context, statusName string) (*entity.MasterRemark, error) {
+	return uc.masterRepo.CreateRemark(statusName)
 }
 
 // UpdateRemark updates an existing remark.
-func (uc *MasterUseCase) UpdateRemark(ctx context.Context, id uint, name string) (*entity.MasterRemark, error) {
-	return uc.masterRepo.UpdateRemark(id, name)
+func (uc *MasterUseCase) UpdateRemark(ctx context.Context, id uint, statusName string) (*entity.MasterRemark, error) {
+	return uc.masterRepo.UpdateRemark(id, statusName)
 }
 
 // DeleteRemark deletes a remark.
